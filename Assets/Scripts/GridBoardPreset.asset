@@ -28,19 +28,19 @@ MonoBehaviour:
     true,\n        true,\n        true,\n        true,\n        true,\n        false,\n       
     false,\n        true,\n        false,\n        true,\n        true,\n       
     true,\n        true,\n        true,\n        true,\n        true,\n        true,\n       
-    true,\n        true,\n        true,\n        false,\n        true,\n        true,\n       
+    true,\n        true,\n        true,\n        false,\n        true,\n        false,\n       
+    false,\n        false,\n        true,\n        true,\n        true,\n       
+    true,\n        true,\n        true,\n        true,\n        true,\n        true,\n       
+    true,\n        false,\n        true,\n        true,\n        false,\n       
+    true,\n        true,\n        true,\n        true,\n        true,\n        true,\n       
+    true,\n        true,\n        true,\n        true,\n        true,\n        false,\n       
+    false,\n        true,\n        false,\n        true,\n        true,\n       
+    true,\n        true,\n        true,\n        true,\n        true,\n        true,\n       
+    true,\n        true,\n        true,\n        true,\n        true,\n        false,\n       
     false,\n        true,\n        true,\n        true,\n        true,\n        true,\n       
     true,\n        true,\n        true,\n        true,\n        true,\n        true,\n       
-    false,\n        true,\n        true,\n        false,\n        true,\n       
     true,\n        true,\n        true,\n        true,\n        true,\n        true,\n       
-    true,\n        true,\n        true,\n        true,\n        false,\n        false,\n       
-    true,\n        false,\n        true,\n        true,\n        true,\n        true,\n       
-    true,\n        true,\n        true,\n        true,\n        true,\n        true,\n       
-    true,\n        true,\n        true,\n        false,\n        false,\n       
-    true,\n        true,\n        true,\n        true,\n        true,\n        true,\n       
-    true,\n        true,\n        true,\n        true,\n        true,\n        true,\n       
-    true,\n        true,\n        true,\n        true,\n        true,\n        true\n   
-    ],\n    \"switches\": [\n        {\n            \"cell\": {\n               
+    true\n    ],\n    \"switches\": [\n        {\n            \"cell\": {\n               
     \"x\": 5,\n                \"y\": 5\n            },\n            \"requireAdjacency\":
     true,\n            \"targets\": [\n                {\n                    \"x\":
     7,\n                    \"y\": 7\n                },\n                {\n                   
