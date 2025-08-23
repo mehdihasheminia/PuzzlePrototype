@@ -15,35 +15,35 @@ MonoBehaviour:
   json: "{\n    \"version\": 1,\n    \"rows\": 10,\n    \"cols\": 15,\n    \"cellSize\":
     1.0,\n    \"origin\": {\n        \"x\": 0.0,\n        \"y\": 0.0\n    },\n   
     \"walkableFlat\": [\n        true,\n        true,\n        true,\n        true,\n       
+    true,\n        true,\n        true,\n        false,\n        true,\n        true,\n       
     true,\n        true,\n        true,\n        true,\n        true,\n        true,\n       
     true,\n        true,\n        true,\n        true,\n        true,\n        true,\n       
-    true,\n        true,\n        true,\n        true,\n        true,\n        true,\n       
-    true,\n        true,\n        true,\n        true,\n        true,\n        true,\n       
-    true,\n        true,\n        true,\n        true,\n        true,\n        true,\n       
-    true,\n        true,\n        true,\n        true,\n        true,\n        true,\n       
-    true,\n        true,\n        true,\n        true,\n        true,\n        true,\n       
+    false,\n        true,\n        true,\n        true,\n        true,\n        true,\n       
+    true,\n        true,\n        true,\n        true,\n        true,\n        false,\n       
+    false,\n        false,\n        false,\n        false,\n        true,\n       
     true,\n        true,\n        true,\n        true,\n        true,\n        true,\n       
     true,\n        true,\n        false,\n        false,\n        true,\n       
+    true,\n        true,\n        true,\n        true,\n        false,\n        false,\n       
     true,\n        true,\n        true,\n        true,\n        true,\n        true,\n       
+    false,\n        true,\n        true,\n        true,\n        true,\n        true,\n       
+    false,\n        false,\n        true,\n        false,\n        true,\n       
+    true,\n        true,\n        true,\n        true,\n        false,\n        true,\n       
+    true,\n        true,\n        true,\n        true,\n        false,\n        true,\n       
+    false,\n        false,\n        false,\n        true,\n        true,\n       
+    true,\n        true,\n        false,\n        true,\n        true,\n        true,\n       
+    true,\n        true,\n        false,\n        true,\n        true,\n        false,\n       
     true,\n        true,\n        true,\n        true,\n        true,\n        false,\n       
-    false,\n        true,\n        false,\n        true,\n        true,\n       
+    false,\n        false,\n        false,\n        false,\n        false,\n       
+    false,\n        false,\n        true,\n        false,\n        true,\n       
     true,\n        true,\n        true,\n        true,\n        true,\n        true,\n       
-    true,\n        true,\n        true,\n        false,\n        true,\n        false,\n       
+    true,\n        true,\n        true,\n        true,\n        true,\n        true,\n       
     false,\n        false,\n        true,\n        true,\n        true,\n       
     true,\n        true,\n        true,\n        true,\n        true,\n        true,\n       
-    true,\n        false,\n        true,\n        true,\n        false,\n       
     true,\n        true,\n        true,\n        true,\n        true,\n        true,\n       
-    true,\n        true,\n        true,\n        true,\n        true,\n        false,\n       
-    false,\n        true,\n        false,\n        true,\n        true,\n       
-    true,\n        true,\n        true,\n        true,\n        true,\n        true,\n       
-    true,\n        true,\n        true,\n        true,\n        true,\n        false,\n       
-    false,\n        true,\n        true,\n        true,\n        true,\n        true,\n       
-    true,\n        true,\n        true,\n        true,\n        true,\n        true,\n       
-    true,\n        true,\n        true,\n        true,\n        true,\n        true,\n       
-    true\n    ],\n    \"switches\": [\n        {\n            \"cell\": {\n               
-    \"x\": 5,\n                \"y\": 5\n            },\n            \"requireAdjacency\":
-    true,\n            \"targets\": [\n                {\n                    \"x\":
-    7,\n                    \"y\": 7\n                },\n                {\n                   
-    \"x\": 7,\n                    \"y\": 6\n                },\n               
-    {\n                    \"x\": 7,\n                    \"y\": 5\n               
-    }\n            ]\n        }\n    ]\n}"
+    true,\n        true,\n        true\n    ],\n    \"switches\": [\n        {\n           
+    \"cell\": {\n                \"x\": 5,\n                \"y\": 5\n           
+    },\n            \"requireAdjacency\": true,\n            \"targets\": [\n               
+    {\n                    \"x\": 7,\n                    \"y\": 7\n               
+    },\n                {\n                    \"x\": 7,\n                    \"y\":
+    6\n                },\n                {\n                    \"x\": 7,\n                   
+    \"y\": 5\n                }\n            ]\n        }\n    ]\n}"
