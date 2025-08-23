@@ -180,4 +180,20 @@ public class GridBoard : MonoBehaviour
             if (IsWalkable(n.x, n.y)) yield return n;
         }
     }
+    
+    public void RebuildGridData()
+    {
+        // calls your internal EnsureGridData()
+        // If EnsureGridData is private, just move it above and make it 'public',
+        // or duplicate its body here.
+#if UNITY_EDITOR
+        // In case you used OnValidate to clamp values, mimic that here
+        rows = Mathf.Max(1, rows);
+        cols = Mathf.Max(1, cols);
+        cellSize = Mathf.Max(0.01f, cellSize);
+#endif
+        // If EnsureGridData() exists & is private, make it public, or paste its logic here.
+        // Assuming it's available:
+        // EnsureGridData();
+    }
 }
