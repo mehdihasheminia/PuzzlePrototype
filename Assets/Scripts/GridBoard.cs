@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 [ExecuteAlways]
@@ -143,6 +144,40 @@ public class GridBoard : MonoBehaviour
                 Gizmos.color = new Color(1f, 0.2f, 0.2f, 0.35f);
                 Gizmos.DrawCube(CellToWorldCenter(r, c), new Vector3(cellSize * 0.9f, cellSize * 0.9f, 0.01f));
             }
+        }
+    }
+    
+    //------------------------------------------------------------------------------------------------------------------
+    private readonly Dictionary<Vector2Int, ICellInteractable> _interactables
+        = new Dictionary<Vector2Int, ICellInteractable>();
+
+    public void RegisterInteractable(ICellInteractable obj)
+    {
+        if (obj == null) return;
+        _interactables[obj.Cell] = obj;
+    }
+
+    public void UnregisterInteractable(ICellInteractable obj)
+    {
+        if (obj == null) return;
+        if (_interactables.TryGetValue(obj.Cell, out var curr) && curr == obj)
+            _interactables.Remove(obj.Cell);
+    }
+
+    public bool TryGetInteractable(Vector2Int cell, out ICellInteractable interactable)
+        => _interactables.TryGetValue(cell, out interactable);
+
+    /// Convenience: walkable neighbors (4-dir)
+    public IEnumerable<Vector2Int> WalkableNeighbors(Vector2Int cell)
+    {
+         Vector2Int[] DIRS4 = {
+            new Vector2Int(-1,0), new Vector2Int(1,0),
+            new Vector2Int(0,-1), new Vector2Int(0,1)
+        };
+        foreach (var d in DIRS4)
+        {
+            var n = new Vector2Int(cell.x + d.x, cell.y + d.y);
+            if (IsWalkable(n.x, n.y)) yield return n;
         }
     }
 }

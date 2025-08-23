@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 [RequireComponent(typeof(Collider2D))]
@@ -8,13 +9,18 @@ public class CharacterMover : MonoBehaviour
     public GridBoard grid;
 
     [Header("Movement")]
-    public float moveSpeed = 6f;         // units per second
+    public float moveSpeed = 6f; // units per second
+
     public float arriveThreshold = 0.02f;
     public bool snapZToZero = true;
 
     private readonly List<Vector2Int> _pathCells = new List<Vector2Int>();
-    private int _pathIndex = -1;         // -1 means idle
+    private int _pathIndex = -1; // -1 means idle
     private Vector3 _currentTarget;
+
+    public KeyCode interactMouse = KeyCode.Mouse1; // Right-click
+    private ICellInteractable _pendingInteract;
+    private Vector2Int _pendingInteractCell;
 
     void Start()
     {
@@ -27,6 +33,7 @@ public class CharacterMover : MonoBehaviour
             // find nearest walkable around you (optional; here we just clamp to the cell)
             // In simple case, just place on center anyway:
         }
+
         var startPos = grid.CellToWorldCenter(startCell.x, startCell.y, snapZToZero ? 0f : transform.position.z);
         transform.position = startPos;
         StopMoving();
@@ -35,6 +42,7 @@ public class CharacterMover : MonoBehaviour
     void Update()
     {
         HandleClick();
+        HandleInteractClick();
         FollowPath();
     }
 
@@ -81,6 +89,52 @@ public class CharacterMover : MonoBehaviour
         }
     }
 
+    void HandleInteractClick()
+    {
+        if (!Input.GetKeyDown(interactMouse)) return;
+
+        var cam = Camera.main;
+        if (cam == null) return;
+
+        var sp = Input.mousePosition;
+        sp.z = Mathf.Abs(cam.transform.position.z - transform.position.z);
+        var world = cam.ScreenToWorldPoint(sp);
+
+        var clickedCell = grid.WorldToCell(world);
+
+        // Is there an interactable on that cell?
+        if (!grid.TryGetInteractable(clickedCell, out var interactable))
+            return;
+
+        var myCell = grid.WorldToCell(transform.position);
+
+        // If already allowed to activate (adjacent or same per rule), do it now
+        if (interactable.CanActivate(myCell))
+        {
+            interactable.Activate();
+            return;
+        }
+
+        // Otherwise, path to a reachable adjacent walkable cell next to the switch
+        var candidateAdj = grid.WalkableNeighbors(clickedCell).ToList();
+        if (candidateAdj.Count == 0) return;
+
+        // Choose the closest (by A* path length); first one that yields a path wins
+        foreach (var adj in candidateAdj.OrderBy(c => Mathf.Abs(c.x - myCell.x) + Mathf.Abs(c.y - myCell.y)))
+        {
+            if (GridPathfinder.FindPath(grid, myCell, adj, _pathCells))
+            {
+                _pathIndex = 0;
+                _currentTarget = CellCenterToWorld(_pathCells[_pathIndex]);
+                _pendingInteract = interactable; // remember to activate on arrival
+                _pendingInteractCell = adj;
+                return;
+            }
+        }
+
+        // No reachable adjacent => give up
+    }
+
     void FollowPath()
     {
         if (_pathIndex < 0 || _pathIndex >= _pathCells.Count) return;
@@ -89,11 +143,21 @@ public class CharacterMover : MonoBehaviour
 
         if ((transform.position - _currentTarget).sqrMagnitude <= arriveThreshold * arriveThreshold)
         {
-            // advance to next waypoint
             _pathIndex++;
             if (_pathIndex >= _pathCells.Count)
             {
-                StopMoving();
+                // Arrived at destination
+                var myCell = grid.WorldToCell(transform.position);
+
+                // If we were pathing to interact, and it's now valid, activate
+                if (_pendingInteract != null && _pendingInteract.CanActivate(myCell))
+                {
+                    _pendingInteract.Activate();
+                }
+
+                _pendingInteract = null;
+                _pathCells.Clear();
+                _pathIndex = -1;
             }
             else
             {
