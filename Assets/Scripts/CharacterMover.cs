@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 [RequireComponent(typeof(Collider2D))]
 public class CharacterMover : MonoBehaviour
@@ -41,13 +42,14 @@ public class CharacterMover : MonoBehaviour
 
     void Update()
     {
-        HandleClick();
+        HandleClickMove();
         HandleInteractClick();
         FollowPath();
     }
 
-    void HandleClick()
+    void HandleClickMove()
     {
+        if (IsPointerOverUI()) return;
         if (!Input.GetMouseButtonDown(0)) return;
 
         var cam = Camera.main;
@@ -91,6 +93,7 @@ public class CharacterMover : MonoBehaviour
 
     void HandleInteractClick()
     {
+        if (IsPointerOverUI()) return;
         if (!Input.GetKeyDown(interactMouse)) return;
 
         var cam = Camera.main;
@@ -175,6 +178,24 @@ public class CharacterMover : MonoBehaviour
     Vector3 CellCenterToWorld(Vector2Int cell)
     {
         return grid.CellToWorldCenter(cell.x, cell.y, snapZToZero ? 0f : transform.position.z);
+    }
+    
+    bool IsPointerOverUI()
+    {
+        // Mouse (editor/desktop)
+        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+            return true;
+
+        // Touch (mobile)
+        if (Input.touchCount > 0 && EventSystem.current != null)
+        {
+            for (int i = 0; i < Input.touchCount; i++)
+            {
+                if (EventSystem.current.IsPointerOverGameObject(Input.touches[i].fingerId))
+                    return true;
+            }
+        }
+        return false;
     }
 
     void OnDrawGizmosSelected()
