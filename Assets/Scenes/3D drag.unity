@@ -372,6 +372,18 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &835551217 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 9006667493617645209, guid: 2c7963edf128bc34d955fb184f74996a,
+    type: 3}
+  m_PrefabInstance: {fileID: 2134807789}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e44c11f2f2c566c46826a99283dbf535, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &977673527
 GameObject:
   m_ObjectHideFlags: 0
@@ -544,7 +556,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 1707525625466952, guid: beb162d963ca065489b61138f84de28d, type: 3}
       propertyPath: m_Name
-      value: SM_Icon_Arrow_Small_01
+      value: Arrow
       objectReference: {fileID: 0}
     - target: {fileID: 1707525625466952, guid: beb162d963ca065489b61138f84de28d, type: 3}
       propertyPath: m_Layer
@@ -814,12 +826,12 @@ PrefabInstance:
     - target: {fileID: 116463445867728887, guid: 2c7963edf128bc34d955fb184f74996a,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: -0.0249068
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 116463445867728887, guid: 2c7963edf128bc34d955fb184f74996a,
         type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.010710722
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 116463445867728887, guid: 2c7963edf128bc34d955fb184f74996a,
         type: 3}
@@ -829,22 +841,22 @@ PrefabInstance:
     - target: {fileID: 116463445867728887, guid: 2c7963edf128bc34d955fb184f74996a,
         type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.9186587
+      value: 0.7071068
       objectReference: {fileID: 0}
     - target: {fileID: 116463445867728887, guid: 2c7963edf128bc34d955fb184f74996a,
         type: 3}
       propertyPath: m_LocalRotation.x
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 116463445867728887, guid: 2c7963edf128bc34d955fb184f74996a,
         type: 3}
       propertyPath: m_LocalRotation.y
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 116463445867728887, guid: 2c7963edf128bc34d955fb184f74996a,
         type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0.3950524
+      value: 0.7071068
       objectReference: {fileID: 0}
     - target: {fileID: 116463445867728887, guid: 2c7963edf128bc34d955fb184f74996a,
         type: 3}
@@ -859,7 +871,7 @@ PrefabInstance:
     - target: {fileID: 116463445867728887, guid: 2c7963edf128bc34d955fb184f74996a,
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
-      value: -46.538
+      value: 90
       objectReference: {fileID: 0}
     - target: {fileID: 3223853028311135080, guid: 2c7963edf128bc34d955fb184f74996a,
         type: 3}
@@ -874,7 +886,7 @@ PrefabInstance:
     - target: {fileID: 5199228939298028431, guid: 2c7963edf128bc34d955fb184f74996a,
         type: 3}
       propertyPath: m_Name
-      value: SM_Icon_Circle_01 (1)
+      value: Outer Circle
       objectReference: {fileID: 0}
     - target: {fileID: 5837716923523841574, guid: 2c7963edf128bc34d955fb184f74996a,
         type: 3}
@@ -909,12 +921,12 @@ PrefabInstance:
     - target: {fileID: 116463445867728887, guid: 2c7963edf128bc34d955fb184f74996a,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: -0.021558482
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 116463445867728887, guid: 2c7963edf128bc34d955fb184f74996a,
         type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.030529046
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 116463445867728887, guid: 2c7963edf128bc34d955fb184f74996a,
         type: 3}
@@ -924,22 +936,22 @@ PrefabInstance:
     - target: {fileID: 116463445867728887, guid: 2c7963edf128bc34d955fb184f74996a,
         type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.46579754
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 116463445867728887, guid: 2c7963edf128bc34d955fb184f74996a,
         type: 3}
       propertyPath: m_LocalRotation.x
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 116463445867728887, guid: 2c7963edf128bc34d955fb184f74996a,
         type: 3}
       propertyPath: m_LocalRotation.y
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 116463445867728887, guid: 2c7963edf128bc34d955fb184f74996a,
         type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0.8848914
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 116463445867728887, guid: 2c7963edf128bc34d955fb184f74996a,
         type: 3}
@@ -954,7 +966,7 @@ PrefabInstance:
     - target: {fileID: 116463445867728887, guid: 2c7963edf128bc34d955fb184f74996a,
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
-      value: -124.476
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4440075968314124763, guid: 2c7963edf128bc34d955fb184f74996a,
         type: 3}
@@ -964,7 +976,27 @@ PrefabInstance:
     - target: {fileID: 5199228939298028431, guid: 2c7963edf128bc34d955fb184f74996a,
         type: 3}
       propertyPath: m_Name
-      value: SM_Icon_Circle_01
+      value: Inner Circle
+      objectReference: {fileID: 0}
+    - target: {fileID: 5199228939298028431, guid: 2c7963edf128bc34d955fb184f74996a,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 9006667493617645209, guid: 2c7963edf128bc34d955fb184f74996a,
+        type: 3}
+      propertyPath: m_Influencers.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 9006667493617645209, guid: 2c7963edf128bc34d955fb184f74996a,
+        type: 3}
+      propertyPath: m_Influencers.Array.data[0].m_Draggable
+      value: 
+      objectReference: {fileID: 835551217}
+    - target: {fileID: 9006667493617645209, guid: 2c7963edf128bc34d955fb184f74996a,
+        type: 3}
+      propertyPath: m_Influencers.Array.data[0].m_Multiplier
+      value: 0.5
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -977,8 +1009,8 @@ SceneRoots:
   m_Roots:
   - {fileID: 2021775563}
   - {fileID: 1987055433}
-  - {fileID: 733929665405565493}
   - {fileID: 2134807789}
+  - {fileID: 733929665405565493}
   - {fileID: 1633952396}
   - {fileID: 977673529}
   - {fileID: 1431788547}
