@@ -8,7 +8,7 @@ using UnityEngine;
 /// with optional angle limits. Requires a Collider on the object.
 /// </summary>
 [RequireComponent(typeof(Collider))]
-public class TwistDraggable : MonoBehaviour
+public class RadialDraggable : MonoBehaviour
 {
     [Header("Axis")]
     [Tooltip("Axis to rotate around, in the tube's local space.")]
@@ -27,13 +27,13 @@ public class TwistDraggable : MonoBehaviour
     [Serializable]
     public struct RotationLink
     {
-        public TwistDraggable m_Draggable;
+        public RadialDraggable m_Draggable;
         public float m_Multiplier;
     }
     [Header("Link")]
     public List<RotationLink> m_Influencers;
 
-    public event Action<TwistDraggable, float> RotationUpdated;
+    public event Action<RadialDraggable, float> RotationUpdated;
 
     Camera _cam;
     Quaternion _startRotation;
@@ -42,13 +42,13 @@ public class TwistDraggable : MonoBehaviour
     Vector3 _startDirOnPlane; // direction from pivot to initial hit projected onto plane
     bool _dragging;
     float m_LastAngle;
-    Dictionary<TwistDraggable, float> m_RotationLinks;
+    Dictionary<RadialDraggable, float> m_RotationLinks;
     
     void Awake()
     {
         _cam = Camera.main;
 
-        m_RotationLinks = new Dictionary<TwistDraggable, float>();
+        m_RotationLinks = new Dictionary<RadialDraggable, float>();
         if (m_Influencers != null)
             m_RotationLinks = m_Influencers.ToDictionary(x => x.m_Draggable, y => y.m_Multiplier);
 
@@ -124,7 +124,7 @@ public class TwistDraggable : MonoBehaviour
         return false;
     }
     
-    void LinkRotationUpdated(TwistDraggable link, float delta)
+    void LinkRotationUpdated(RadialDraggable link, float delta)
     {
         if (link == this)
             return;
