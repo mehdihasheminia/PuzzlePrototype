@@ -405,16 +405,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f921a59be10c46744aac1a3e948a00b7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  width: 10
-  height: 10
-  cellSize: 1
+  board: {fileID: 11400000, guid: d96fff757c7070a42b5049b1c0de3db2, type: 2}
   origin: {x: 0, y: 0, z: 0}
   gridY: 0
-  initialBlocked:
-  - {x: 3, y: 3}
-  - {x: 3, y: 4}
-  - {x: 4, y: 4}
-  - {x: 5, y: 4}
+  cellSize: 1
 --- !u!4 &649081526
 Transform:
   m_ObjectHideFlags: 0
@@ -622,7 +616,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4586732178245358, guid: df676aa57d0155744a9dbdd9d95e518d, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 8.502609
+      value: 7.5026093
       objectReference: {fileID: 0}
     - target: {fileID: 4586732178245358, guid: df676aa57d0155744a9dbdd9d95e518d, type: 3}
       propertyPath: m_LocalRotation.w
