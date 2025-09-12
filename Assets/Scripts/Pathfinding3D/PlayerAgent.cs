@@ -11,16 +11,15 @@ public class PlayerAgent : MonoBehaviour
     public GameManager gameManager;
 
     [Header("Movement")]
-    [Min(0.1f)] public float moveSpeed = 4f; // world units per second
+    [Min(0.1f)] public float moveSpeed = 4f;
     public AnimationCurve stepCurve = AnimationCurve.Linear(0, 0, 1, 1);
 
     [Header("Energy / Turn Limits")]
     [Min(0)] public int maxEnergy = 20;
     public int currentEnergy;
-    [Min(1)] public int maxStepsPerTurn = 5;   // NEW: cap steps per click/turn
+    [Min(1)] public int maxStepsPerTurn = 5;
 
     public Vector2Int CurrentCell { get; private set; }
-
     bool _moving;
 
     void Start()
@@ -29,7 +28,6 @@ public class PlayerAgent : MonoBehaviour
         if (pathfinder == null) pathfinder = FindFirstObjectByType<Pathfinder>();
         if (gameManager == null) gameManager = FindFirstObjectByType<GameManager>();
 
-        // Snap to nearest valid cell at start
         if (!grid.WorldToCell(transform.position, out var cell))
             cell = new Vector2Int(0, 0);
 
@@ -54,15 +52,10 @@ public class PlayerAgent : MonoBehaviour
         gameManager?.OnEnergyChanged(currentEnergy, maxEnergy);
     }
 
-    /// <summary>
-    /// Attempts to move to targetCell in a single "turn".
-    /// Only accepts if steps <= min(maxStepsPerTurn, currentEnergy).
-    /// </summary>
     public void TryMoveToCell(Vector2Int targetCell)
     {
         if (_moving || gameManager?.IsGameOver == true) return;
         if (!grid.InBounds(targetCell) || !grid.IsWalkable(targetCell)) return;
-
         if (!pathfinder.TryFindPath(CurrentCell, targetCell, out List<Vector2Int> path)) return;
 
         int steps = Mathf.Max(0, path.Count - 1);
@@ -71,8 +64,6 @@ public class PlayerAgent : MonoBehaviour
         int allowedSteps = Mathf.Min(maxStepsPerTurn, currentEnergy);
         if (steps > allowedSteps)
         {
-            // Reject this click — exceeds per-turn cap or remaining energy.
-            // (Optional) fire a UI event / sound here
             Debug.Log($"Move rejected: requires {steps} steps, allowed this turn: {allowedSteps}.");
             return;
         }
@@ -84,6 +75,7 @@ public class PlayerAgent : MonoBehaviour
     {
         _moving = true;
 
+        // Move step-by-step; movement cost = 1 energy per cell
         for (int i = 1; i < path.Count; i++)
         {
             var from = grid.CellToWorldCenter(CurrentCell);
@@ -105,24 +97,38 @@ public class PlayerAgent : MonoBehaviour
             if (currentEnergy <= 0)
             {
                 gameManager?.Lose();
-                break;
+                _moving = false;
+                yield break;
             }
 
-            // Win check (same cell as flag)
+            // Check win mid-move if you want immediate victory (optional)
             if (gameManager != null && gameManager.FlagCell == CurrentCell)
             {
                 gameManager.Win();
-                break;
+                _moving = false;
+                yield break;
             }
         }
+
+        // ===== Turn ends here: apply enemy hazards once =====
+        gameManager?.ApplyEndOfTurnEnemyEffects(this);
+
+        // (If reaching the flag should trump hazards, move Win() call below this line.)
+        if (!gameManager.IsGameOver && gameManager.FlagCell == CurrentCell)
+            gameManager.Win();
 
         _moving = false;
     }
 
-    /// <summary>
-    /// Helper you can call from UI to validate a hover/cell preview.
-    /// Returns true if the cell is reachable within this turn cap and energy.
-    /// </summary>
+    // External energy loss (from hazards, traps, etc.)
+    public void ApplyExternalEnergyLoss(int amount)
+    {
+        if (amount <= 0 || gameManager?.IsGameOver == true) return;
+        currentEnergy = Mathf.Max(0, currentEnergy - amount);
+        gameManager?.OnEnergyChanged(currentEnergy, maxEnergy);
+    }
+
+    // Optional helper for UI preview
     public bool CanReachInOneTurn(Vector2Int targetCell, out int steps)
     {
         steps = 0;
