@@ -1,0 +1,63 @@
+using UnityEngine;
+
+[DisallowMultipleComponent]
+public class Buff : MonoBehaviour
+{
+    [Header("Buff")]
+    [Min(1)] public int power = 1;             // energy gained on consume
+    [Tooltip("Buffs trigger only if the player ENDS a turn on this exact cell.")]
+    public bool triggerOnTurnEndOnly = true;   // stays for symmetry, always true in current design
+    public bool consumed { get; private set; } // persisted only while scene runs
+
+    [Header("Placement")]
+    public Grid2D grid;                        // optional; auto-found
+    public Vector2Int Cell { get; private set; }
+
+    void Start()
+    {
+        if (grid == null) grid = FindFirstObjectByType<Grid2D>();
+        if (grid != null && grid.WorldToCell(transform.position, out var c))
+        {
+            Cell = c;
+            transform.position = grid.CellToWorldCenter(c);
+        }
+    }
+
+#if UNITY_EDITOR
+    void OnValidate()
+    {
+        if (!Application.isPlaying)
+        {
+            if (grid == null) grid = FindFirstObjectByType<Grid2D>();
+            if (grid != null && grid.WorldToCell(transform.position, out var c))
+                Cell = c;
+        }
+    }
+
+    void OnDrawGizmosSelected()
+    {
+        if (grid == null) return;
+        var center = grid.CellToWorldCenter(Cell);
+        // Cell highlight (blue-green)
+        Gizmos.color = consumed ? new Color(0.2f, 0.5f, 0.5f, 0.20f) : new Color(0.2f, 1f, 1f, 0.35f);
+        Gizmos.DrawCube(center + Vector3.up * 0.005f, new Vector3(grid.cellSize * 0.95f, 0.01f, grid.cellSize * 0.95f));
+
+        // Label
+        #if UNITY_EDITOR
+        UnityEditor.Handles.color = consumed ? new Color(0.6f, 0.9f, 0.9f, 0.6f) : new Color(0f, 1f, 1f, 1f);
+        UnityEditor.Handles.Label(center + new Vector3(0, 0.03f, 0), consumed ? $"BUFF (used)" : $"BUFF +{power}");
+        #endif
+    }
+#endif
+
+    /// <summary>Call when player ends a turn on this cell.</summary>
+    public int ConsumeIfApplicable(Vector2Int playerCell)
+    {
+        if (consumed) return 0;
+        if (playerCell != Cell) return 0; // range is exactly 0
+        consumed = true;
+        // Hide/disable the visual in-scene; pick one:
+        gameObject.SetActive(false);      // simplest for blockouts
+        return power;
+    }
+}

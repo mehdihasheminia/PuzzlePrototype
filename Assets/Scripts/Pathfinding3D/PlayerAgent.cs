@@ -111,7 +111,7 @@ public class PlayerAgent : MonoBehaviour
         }
 
         // ===== Turn ends here: apply enemy hazards once =====
-        gameManager?.ApplyEndOfTurnEnemyEffects(this);
+        gameManager?.ApplyEndOfTurnEffects(this);
 
         // (If reaching the flag should trump hazards, move Win() call below this line.)
         if (!gameManager.IsGameOver && gameManager.FlagCell == CurrentCell)
@@ -137,5 +137,13 @@ public class PlayerAgent : MonoBehaviour
         steps = Mathf.Max(0, path.Count - 1);
         int allowedSteps = Mathf.Min(maxStepsPerTurn, currentEnergy);
         return steps > 0 && steps <= allowedSteps;
+    }
+    
+    public void ApplyExternalEnergyGain(int amount, bool capToMax = true)
+    {
+        if (amount <= 0 || gameManager?.IsGameOver == true) return;
+        if (capToMax) currentEnergy = Mathf.Min(maxEnergy, currentEnergy + amount);
+        else          currentEnergy += amount;
+        gameManager?.OnEnergyChanged(currentEnergy, maxEnergy);
     }
 }

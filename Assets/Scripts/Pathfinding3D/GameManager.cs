@@ -6,7 +6,7 @@ public class GameManager : MonoBehaviour
 {
     [Header("Refs")]
     public Grid2D grid;
-    public Transform flag; // place a simple object at the desired cell
+    public Transform flag;
 
     [Header("Events")]
     public UnityEvent onWin;
@@ -18,8 +18,11 @@ public class GameManager : MonoBehaviour
 
     // ===== ENEMIES =====
     [Header("Enemies")]
-    [Tooltip("If empty, enemies will be auto-discovered at Start().")]
     public List<Enemy> enemies = new List<Enemy>();
+
+    // ===== BUFFS =====
+    [Header("Buffs")]
+    public List<Buff> buffs = new List<Buff>();   // NEW
 
     void Start()
     {
@@ -31,10 +34,10 @@ public class GameManager : MonoBehaviour
         }
 
         if (enemies == null || enemies.Count == 0)
-        {
-            var found = FindObjectsByType<Enemy>(FindObjectsSortMode.None);
-            enemies = new List<Enemy>(found);
-        }
+            enemies = new List<Enemy>(FindObjectsByType<Enemy>(FindObjectsSortMode.None));
+
+        if (buffs == null || buffs.Count == 0)     // NEW
+            buffs = new List<Buff>(FindObjectsByType<Buff>(FindObjectsSortMode.None));
     }
 
     public void Win()
@@ -58,30 +61,39 @@ public class GameManager : MonoBehaviour
         onEnergyChanged?.Invoke(current, max);
     }
 
-    // ===== ENEMIES: Apply at end-of-turn only =====
-    public void ApplyEndOfTurnEnemyEffects(PlayerAgent agent)
+    // ===== Turn-end effects aggregation =====
+    public void ApplyEndOfTurnEffects(PlayerAgent agent)
     {
-        if (IsGameOver || agent == null || enemies == null) return;
-        int totalDamage = 0;
+        if (IsGameOver || agent == null) return;
 
+        // 1) Hazards first (design choice). If you want buffs to potentially save from lethal damage,
+        //    swap the order or add a flag to control precedence.
+        int totalDamage = 0;
         foreach (var e in enemies)
         {
-            if (e == null) continue;
-            if (!e.triggerOnTurnEndOnly) continue; // (future-proof if you add other timing modes)
-
-            // Manhattan distance on grid
+            if (e == null || !e.triggerOnTurnEndOnly) continue;
             int dx = Mathf.Abs(e.Cell.x - agent.CurrentCell.x);
             int dy = Mathf.Abs(e.Cell.y - agent.CurrentCell.y);
-            if (dx + dy <= e.range)
-                totalDamage += e.power;
+            if (dx + dy <= e.range) totalDamage += e.power;
         }
-
         if (totalDamage > 0)
         {
             agent.ApplyExternalEnergyLoss(totalDamage);
-            Debug.Log($"Enemy hazards dealt {totalDamage} energy.");
-            if (agent.currentEnergy <= 0)
-                Lose();
+            Debug.Log($"Hazards dealt {totalDamage} energy.");
+            if (agent.currentEnergy <= 0) { Lose(); return; }
+        }
+
+        // 2) Buffs (range 0; consumable)
+        int gained = 0;
+        foreach (var b in buffs)
+        {
+            if (b == null || !b.triggerOnTurnEndOnly) continue;
+            gained += b.ConsumeIfApplicable(agent.CurrentCell);
+        }
+        if (gained > 0)
+        {
+            agent.ApplyExternalEnergyGain(gained, capToMax:true);
+            Debug.Log($"+{gained} energy from buffs.");
         }
     }
 }
