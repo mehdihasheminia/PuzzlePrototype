@@ -14,10 +14,12 @@ public class PlayerAgent : MonoBehaviour
     [Min(0.1f)] public float moveSpeed = 4f;
     public AnimationCurve stepCurve = AnimationCurve.Linear(0, 0, 1, 1);
 
-    [Header("Energy / Turn Limits")]
-    [Min(0)] public int maxEnergy = 20;
-    public int currentEnergy;
-    [Min(1)] public int maxStepsPerTurn = 5;
+    [Header("Health")]
+    [Min(1)] public int maxHealth = 10;
+    public int currentHealth;
+
+    [Header("Turn Rules")]
+    [Min(1)] public int maxStepsPerTurn = 5; // purely a turn cap; moving costs NO health
 
     public Vector2Int CurrentCell { get; private set; }
     bool _moving;
@@ -48,23 +50,25 @@ public class PlayerAgent : MonoBehaviour
 
         CurrentCell = cell;
         transform.position = grid.CellToWorldCenter(CurrentCell);
-        currentEnergy = maxEnergy;
-        gameManager?.OnEnergyChanged(currentEnergy, maxEnergy);
+
+        currentHealth = Mathf.Clamp(currentHealth <= 0 ? maxHealth : currentHealth, 1, maxHealth);
+        gameManager?.OnHealthChanged(currentHealth, maxHealth);
     }
 
     public void TryMoveToCell(Vector2Int targetCell)
     {
         if (_moving || gameManager?.IsGameOver == true) return;
+        if (gameManager != null && !gameManager.IsPlayerTurn) return;
+
         if (!grid.InBounds(targetCell) || !grid.IsWalkable(targetCell)) return;
         if (!pathfinder.TryFindPath(CurrentCell, targetCell, out List<Vector2Int> path)) return;
 
         int steps = Mathf.Max(0, path.Count - 1);
         if (steps == 0) return;
 
-        int allowedSteps = Mathf.Min(maxStepsPerTurn, currentEnergy);
-        if (steps > allowedSteps)
+        if (steps > maxStepsPerTurn)
         {
-            Debug.Log($"Move rejected: requires {steps} steps, allowed this turn: {allowedSteps}.");
+            Debug.Log($"Move rejected: requires {steps} steps, allowed per turn: {maxStepsPerTurn}.");
             return;
         }
 
@@ -75,7 +79,6 @@ public class PlayerAgent : MonoBehaviour
     {
         _moving = true;
 
-        // Move step-by-step; movement cost = 1 energy per cell
         for (int i = 1; i < path.Count; i++)
         {
             var from = grid.CellToWorldCenter(CurrentCell);
@@ -91,59 +94,37 @@ public class PlayerAgent : MonoBehaviour
             }
 
             CurrentCell = path[i];
-            currentEnergy = Mathf.Max(0, currentEnergy - 1);
-            gameManager?.OnEnergyChanged(currentEnergy, maxEnergy);
-
-            if (currentEnergy <= 0)
-            {
-                gameManager?.Lose();
-                _moving = false;
-                yield break;
-            }
-
-            // Check win mid-move if you want immediate victory (optional)
-            if (gameManager != null && gameManager.FlagCell == CurrentCell)
-            {
-                gameManager.Win();
-                _moving = false;
-                yield break;
-            }
         }
 
-        // ===== Turn ends here: apply enemy hazards once =====
-        gameManager?.ApplyEndOfTurnEffects(this);
-
-        // (If reaching the flag should trump hazards, move Win() call below this line.)
-        if (!gameManager.IsGameOver && gameManager.FlagCell == CurrentCell)
-            gameManager.Win();
-
         _moving = false;
+
+        // The player's turn ends after movement completes.
+        gameManager?.NotifyPlayerTurnEnded(this);
     }
 
-    // External energy loss (from hazards, traps, etc.)
-    public void ApplyExternalEnergyLoss(int amount)
+    // --- Health interface ---
+    public void ApplyDamage(int amount)
     {
         if (amount <= 0 || gameManager?.IsGameOver == true) return;
-        currentEnergy = Mathf.Max(0, currentEnergy - amount);
-        gameManager?.OnEnergyChanged(currentEnergy, maxEnergy);
+        currentHealth = Mathf.Max(0, currentHealth - amount);
+        gameManager?.OnHealthChanged(currentHealth, maxHealth);
+    }
+
+    public void ApplyHeal(int amount, bool capToMax = true)
+    {
+        if (amount <= 0 || gameManager?.IsGameOver == true) return;
+        if (capToMax) currentHealth = Mathf.Min(maxHealth, currentHealth + amount);
+        else          currentHealth += amount;
+        gameManager?.OnHealthChanged(currentHealth, maxHealth);
     }
 
     // Optional helper for UI preview
     public bool CanReachInOneTurn(Vector2Int targetCell, out int steps)
     {
         steps = 0;
-        if (!grid.InBounds(targetCell) || !grid.IsWalkable(targetCell) || currentEnergy <= 0) return false;
+        if (!grid.InBounds(targetCell) || !grid.IsWalkable(targetCell)) return false;
         if (!pathfinder.TryFindPath(CurrentCell, targetCell, out var path)) return false;
         steps = Mathf.Max(0, path.Count - 1);
-        int allowedSteps = Mathf.Min(maxStepsPerTurn, currentEnergy);
-        return steps > 0 && steps <= allowedSteps;
-    }
-    
-    public void ApplyExternalEnergyGain(int amount, bool capToMax = true)
-    {
-        if (amount <= 0 || gameManager?.IsGameOver == true) return;
-        if (capToMax) currentEnergy = Mathf.Min(maxEnergy, currentEnergy + amount);
-        else          currentEnergy += amount;
-        gameManager?.OnEnergyChanged(currentEnergy, maxEnergy);
+        return steps > 0 && steps <= maxStepsPerTurn;
     }
 }

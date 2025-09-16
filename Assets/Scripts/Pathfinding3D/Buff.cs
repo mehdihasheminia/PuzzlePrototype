@@ -4,9 +4,9 @@ using UnityEngine;
 public class Buff : MonoBehaviour
 {
     [Header("Buff")]
-    [Min(1)] public int power = 1;             // energy gained on consume
+    [Min(1)] public int power = 1;             // health gained on consume
     [Tooltip("Buffs trigger only if the player ENDS a turn on this exact cell.")]
-    public bool triggerOnTurnEndOnly = true;   // stays for symmetry, always true in current design
+    public bool triggerOnTurnEndOnly = true;   // remains for consistency
     public bool consumed { get; private set; } // persisted only while scene runs
 
     [Header("Placement")]
@@ -42,22 +42,20 @@ public class Buff : MonoBehaviour
         Gizmos.color = consumed ? new Color(0.2f, 0.5f, 0.5f, 0.20f) : new Color(0.2f, 1f, 1f, 0.35f);
         Gizmos.DrawCube(center + Vector3.up * 0.005f, new Vector3(grid.cellSize * 0.95f, 0.01f, grid.cellSize * 0.95f));
 
-        // Label
         #if UNITY_EDITOR
         UnityEditor.Handles.color = consumed ? new Color(0.6f, 0.9f, 0.9f, 0.6f) : new Color(0f, 1f, 1f, 1f);
-        UnityEditor.Handles.Label(center + new Vector3(0, 0.03f, 0), consumed ? $"BUFF (used)" : $"BUFF +{power}");
+        UnityEditor.Handles.Label(center + new Vector3(0, 0.03f, 0), consumed ? $"BUFF (used)" : $"BUFF +{power} HP");
         #endif
     }
 #endif
 
-    /// <summary>Call when player ends a turn on this cell.</summary>
+    /// <summary>Called in AI turn if the player ended their move on this cell.</summary>
     public int ConsumeIfApplicable(Vector2Int playerCell)
     {
         if (consumed) return 0;
         if (playerCell != Cell) return 0; // range is exactly 0
         consumed = true;
-        // Hide/disable the visual in-scene; pick one:
-        gameObject.SetActive(false);      // simplest for blockouts
+        gameObject.SetActive(false);
         return power;
     }
 }

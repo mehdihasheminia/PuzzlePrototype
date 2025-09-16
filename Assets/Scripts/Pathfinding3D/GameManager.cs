@@ -1,9 +1,12 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 
 public class GameManager : MonoBehaviour
 {
+    public enum TurnPhase { Player, AI }
+
     [Header("Refs")]
     public Grid2D grid;
     public Transform flag;
@@ -11,10 +14,12 @@ public class GameManager : MonoBehaviour
     [Header("Events")]
     public UnityEvent onWin;
     public UnityEvent onLose;
-    public UnityEvent<int, int> onEnergyChanged;
+    public UnityEvent<int, int> onHealthChanged; // current, max
 
     public bool IsGameOver { get; private set; }
     public Vector2Int FlagCell { get; private set; }
+    public TurnPhase CurrentTurn { get; private set; } = TurnPhase.Player;
+    public bool IsPlayerTurn => CurrentTurn == TurnPhase.Player;
 
     // ===== ENEMIES =====
     [Header("Enemies")]
@@ -22,7 +27,7 @@ public class GameManager : MonoBehaviour
 
     // ===== BUFFS =====
     [Header("Buffs")]
-    public List<Buff> buffs = new List<Buff>();   // NEW
+    public List<Buff> buffs = new List<Buff>();
 
     void Start()
     {
@@ -36,8 +41,11 @@ public class GameManager : MonoBehaviour
         if (enemies == null || enemies.Count == 0)
             enemies = new List<Enemy>(FindObjectsByType<Enemy>(FindObjectsSortMode.None));
 
-        if (buffs == null || buffs.Count == 0)     // NEW
+        if (buffs == null || buffs.Count == 0)
             buffs = new List<Buff>(FindObjectsByType<Buff>(FindObjectsSortMode.None));
+
+        CurrentTurn = TurnPhase.Player;
+        IsGameOver = false;
     }
 
     public void Win()
@@ -53,21 +61,32 @@ public class GameManager : MonoBehaviour
         if (IsGameOver) return;
         IsGameOver = true;
         onLose?.Invoke();
-        Debug.Log("💀 Game Over (energy depleted)");
+        Debug.Log("💀 Game Over (health depleted)");
     }
 
-    public void OnEnergyChanged(int current, int max)
+    public void OnHealthChanged(int current, int max)
     {
-        onEnergyChanged?.Invoke(current, max);
+        onHealthChanged?.Invoke(current, max);
     }
 
-    // ===== Turn-end effects aggregation =====
-    public void ApplyEndOfTurnEffects(PlayerAgent agent)
+    /// <summary>Called by PlayerAgent when its movement for the turn is fully finished.</summary>
+    public void NotifyPlayerTurnEnded(PlayerAgent agent)
     {
-        if (IsGameOver || agent == null) return;
+        if (IsGameOver) return;
+        if (CurrentTurn != TurnPhase.Player) return;
+        StartCoroutine(ResolveAITurn(agent));
+    }
 
-        // 1) Hazards first (design choice). If you want buffs to potentially save from lethal damage,
-        //    swap the order or add a flag to control precedence.
+    IEnumerator ResolveAITurn(PlayerAgent agent)
+    {
+        CurrentTurn = TurnPhase.AI;
+
+        // Small delay helps readability / future enemy animations.
+        yield return null;
+
+        if (IsGameOver || agent == null) { yield break; }
+
+        // --- Hazards (enemies) first ---
         int totalDamage = 0;
         foreach (var e in enemies)
         {
@@ -78,22 +97,37 @@ public class GameManager : MonoBehaviour
         }
         if (totalDamage > 0)
         {
-            agent.ApplyExternalEnergyLoss(totalDamage);
-            Debug.Log($"Hazards dealt {totalDamage} energy.");
-            if (agent.currentEnergy <= 0) { Lose(); return; }
+            agent.ApplyDamage(totalDamage);
+            Debug.Log($"Hazards dealt {totalDamage} health damage.");
+            if (agent.currentHealth <= 0) { Lose(); yield break; }
         }
 
-        // 2) Buffs (range 0; consumable)
-        int gained = 0;
+        // --- Buffs (range 0; consumable) ---
+        int healed = 0;
         foreach (var b in buffs)
         {
             if (b == null || !b.triggerOnTurnEndOnly) continue;
-            gained += b.ConsumeIfApplicable(agent.CurrentCell);
+            healed += b.ConsumeIfApplicable(agent.CurrentCell);
         }
-        if (gained > 0)
+        if (healed > 0)
         {
-            agent.ApplyExternalEnergyGain(gained, capToMax:true);
-            Debug.Log($"+{gained} energy from buffs.");
+            agent.ApplyHeal(healed, capToMax: true);
+            Debug.Log($"+{healed} health from buffs.");
+        }
+
+        // If the player ended their move on the flag and survived AI turn, they win now.
+        if (!IsGameOver && FlagCell == agent.CurrentCell)
+        {
+            Win();
+            yield break;
+        }
+
+        // (Future) Enemy movement or board logic could run here, before handing turn back.
+
+        // Hand turn back to player
+        if (!IsGameOver)
+        {
+            CurrentTurn = TurnPhase.Player;
         }
     }
 }

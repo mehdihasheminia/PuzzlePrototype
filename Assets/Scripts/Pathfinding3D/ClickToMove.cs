@@ -24,14 +24,19 @@ public class ClickToMove : MonoBehaviour
     {
         if (cam == null || _grid == null || _agent == null) return;
 
-        // Mouse click / tap
+        // Do not accept input during AI turn or after game over.
+        if (_agent.gameManager != null)
+        {
+            if (_agent.gameManager.IsGameOver || !_agent.gameManager.IsPlayerTurn) return;
+        }
+
         if (Input.GetMouseButtonDown(0))
         {
             if (RaycastToGrid(Input.mousePosition, out Vector2Int cell))
                 _agent.TryMoveToCell(cell);
         }
 
-        // (Optional) Touch support simple tap
+        // (Optional) Simple touch
         if (Input.touchCount == 1 && Input.GetTouch(0).phase == TouchPhase.Began)
         {
             if (RaycastToGrid(Input.GetTouch(0).position, out Vector2Int cell))
