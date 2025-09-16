@@ -19,10 +19,12 @@ public class PlayerAgent : MonoBehaviour
     public int currentHealth;
 
     [Header("Turn Rules")]
-    [Min(1)] public int maxStepsPerTurn = 5; // purely a turn cap; moving costs NO health
+    [Min(1)] public int maxStepsPerTurn = 5; // moving no longer costs energy; this is just a per-turn cap
 
     public Vector2Int CurrentCell { get; private set; }
+
     bool _moving;
+    public bool IsMoving => _moving; // <-- exposed for UI/skip gating
 
     void Start()
     {
@@ -98,7 +100,7 @@ public class PlayerAgent : MonoBehaviour
 
         _moving = false;
 
-        // The player's turn ends after movement completes.
+        // Player turn ends after movement completes.
         gameManager?.NotifyPlayerTurnEnded(this);
     }
 
@@ -116,6 +118,16 @@ public class PlayerAgent : MonoBehaviour
         if (capToMax) currentHealth = Mathf.Min(maxHealth, currentHealth + amount);
         else          currentHealth += amount;
         gameManager?.OnHealthChanged(currentHealth, maxHealth);
+    }
+
+    // --- Skip Turn ---
+    public void SkipTurn()
+    {
+        if (_moving || gameManager == null) return;
+        if (gameManager.IsGameOver || !gameManager.IsPlayerTurn) return;
+
+        // End the player's turn without moving.
+        gameManager.NotifyPlayerTurnEnded(this);
     }
 
     // Optional helper for UI preview
