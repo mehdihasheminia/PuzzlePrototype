@@ -6451,6 +6451,11 @@ PrefabInstance:
       objectReference: {fileID: 649081525}
     - target: {fileID: 6043555654375149453, guid: e24e23ebd4016c4439a6f7a2b3482fda,
         type: 3}
+      propertyPath: visualizePath
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6043555654375149453, guid: e24e23ebd4016c4439a6f7a2b3482fda,
+        type: 3}
       propertyPath: pathCells.Array.size
       value: 4
       objectReference: {fileID: 0}

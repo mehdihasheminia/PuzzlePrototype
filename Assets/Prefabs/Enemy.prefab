@@ -98,6 +98,7 @@ GameObject:
   - component: {fileID: 4408451610315310557}
   - component: {fileID: 6043555654375149453}
   - component: {fileID: 850177793204882105}
+  - component: {fileID: 7222972639492437429}
   m_Layer: 0
   m_Name: Enemy
   m_TagString: Untagged
@@ -292,3 +293,27 @@ LineRenderer:
   m_UseWorldSpace: 1
   m_Loop: 0
   m_ApplyActiveColorSpace: 1
+--- !u!114 &7222972639492437429
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8958489443399977113}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c8abb0a3d96cbe54da8d91448c57c3dd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  grid: {fileID: 0}
+  enabledRuntime: 1
+  mode: 1
+  autoFromEnemy: 1
+  manualRange: 0
+  lineMaterial: {fileID: 2100000, guid: bf8b699dcdcd73e49a261a38c68b012b, type: 2}
+  lineWidth: 0.04
+  yOffset: 0.015
+  rectBorderWidth: 0.03
+  rectInset: 0.06
+  maxCellRects: 256
+  refreshEveryFrame: 1
