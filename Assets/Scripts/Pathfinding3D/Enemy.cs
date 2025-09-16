@@ -1,7 +1,7 @@
 using UnityEngine;
 
 [DisallowMultipleComponent]
-public class Enemy : MonoBehaviour
+public class Enemy : MonoBehaviour, IBoardCellOccupant
 {
     [Header("Enemy Stats")]
     [Min(0)] public int range = 0;  // Manhattan range
@@ -16,13 +16,19 @@ public class Enemy : MonoBehaviour
     void Start()
     {
         if (grid == null) grid = FindFirstObjectByType<Grid2D>();
+        // Snap once; mover (if present) will resync each time it lands.
+        SyncCellFromWorld();
+        if (grid != null) transform.position = grid.CellToWorldCenter(Cell);
+    }
 
-        // Snap to cell center at start (editor convenience)
-        if (grid != null && grid.WorldToCell(transform.position, out var c))
-        {
+    // === IBoardCellOccupant ===
+    public Grid2D GetGrid() => grid != null ? grid : FindFirstObjectByType<Grid2D>();
+
+    public void SyncCellFromWorld()
+    {
+        var g = GetGrid();
+        if (g != null && g.WorldToCell(transform.position, out var c))
             Cell = c;
-            transform.position = grid.CellToWorldCenter(c);
-        }
     }
 
 #if UNITY_EDITOR
@@ -31,7 +37,8 @@ public class Enemy : MonoBehaviour
         if (!Application.isPlaying)
         {
             if (grid == null) grid = FindFirstObjectByType<Grid2D>();
-            if (grid != null && grid.WorldToCell(transform.position, out var c))
+            var g = GetGrid();
+            if (g != null && g.WorldToCell(transform.position, out var c))
                 Cell = c;
         }
     }
@@ -45,7 +52,7 @@ public class Enemy : MonoBehaviour
         var center = grid.CellToWorldCenter(Cell);
         Gizmos.DrawCube(center + Vector3.up * 0.005f, new Vector3(grid.cellSize * 0.95f, 0.01f, grid.cellSize * 0.95f));
 
-        // Range outline (draw as a circle for simplicity)
+        // Range outline
         Gizmos.color = new Color(1f, 0.6f, 0.1f, 1f);
         float r = (range + 0.5f) * grid.cellSize; // envelope
         UnityEditor.Handles.color = Gizmos.color;

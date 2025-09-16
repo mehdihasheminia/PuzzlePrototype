@@ -21,6 +21,10 @@ public class GameManager : MonoBehaviour
     public TurnPhase CurrentTurn { get; private set; } = TurnPhase.Player;
     public bool IsPlayerTurn => CurrentTurn == TurnPhase.Player;
 
+    // ===== MOVERS =====
+    [Header("AI Movers")]
+    public List<GenericAIMover> movers = new List<GenericAIMover>();
+
     // ===== ENEMIES =====
     [Header("Enemies")]
     public List<Enemy> enemies = new List<Enemy>();
@@ -37,6 +41,9 @@ public class GameManager : MonoBehaviour
             FlagCell = cell;
             flag.position = grid.CellToWorldCenter(cell);
         }
+
+        if (movers == null || movers.Count == 0)
+            movers = new List<GenericAIMover>(FindObjectsByType<GenericAIMover>(FindObjectsSortMode.None));
 
         if (enemies == null || enemies.Count == 0)
             enemies = new List<Enemy>(FindObjectsByType<Enemy>(FindObjectsSortMode.None));
@@ -80,13 +87,20 @@ public class GameManager : MonoBehaviour
     IEnumerator ResolveAITurn(PlayerAgent agent)
     {
         CurrentTurn = TurnPhase.AI;
-
-        // Small delay helps readability / future enemy animations.
-        yield return null;
+        yield return null; // small frame break for clarity
 
         if (IsGameOver || agent == null) { yield break; }
 
-        // --- Hazards (enemies) first ---
+        // 0) MOVE BOARD ELEMENTS FIRST (so hazards/buffs use updated positions)
+        for (int i = 0; i < movers.Count; i++)
+        {
+            var mv = movers[i];
+            if (mv == null) continue;
+            yield return StartCoroutine(mv.RunAIMove());
+            if (IsGameOver) yield break;
+        }
+
+        // 1) HAZARDS (enemies) damage based on NEW enemy positions
         int totalDamage = 0;
         foreach (var e in enemies)
         {
@@ -102,7 +116,7 @@ public class GameManager : MonoBehaviour
             if (agent.currentHealth <= 0) { Lose(); yield break; }
         }
 
-        // --- Buffs (range 0; consumable) ---
+        // 2) BUFFS (consumable, range 0) after hazards
         int healed = 0;
         foreach (var b in buffs)
         {
@@ -115,19 +129,15 @@ public class GameManager : MonoBehaviour
             Debug.Log($"+{healed} health from buffs.");
         }
 
-        // If the player ended their move on the flag and survived AI turn, they win now.
+        // 3) Check win AFTER surviving AI turn
         if (!IsGameOver && FlagCell == agent.CurrentCell)
         {
             Win();
             yield break;
         }
 
-        // (Future) Enemy movement or board logic could run here, before handing turn back.
-
-        // Hand turn back to player
+        // Back to player
         if (!IsGameOver)
-        {
             CurrentTurn = TurnPhase.Player;
-        }
     }
 }

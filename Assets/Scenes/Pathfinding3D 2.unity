@@ -529,6 +529,7 @@ MonoBehaviour:
   onHealthChanged:
     m_PersistentCalls:
       m_Calls: []
+  movers: []
   enemies:
   - {fileID: 2094140864}
   - {fileID: 1066480690}
@@ -6443,6 +6444,51 @@ PrefabInstance:
       propertyPath: grid
       value: 
       objectReference: {fileID: 649081525}
+    - target: {fileID: 6043555654375149453, guid: e24e23ebd4016c4439a6f7a2b3482fda,
+        type: 3}
+      propertyPath: grid
+      value: 
+      objectReference: {fileID: 649081525}
+    - target: {fileID: 6043555654375149453, guid: e24e23ebd4016c4439a6f7a2b3482fda,
+        type: 3}
+      propertyPath: pathCells.Array.size
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 6043555654375149453, guid: e24e23ebd4016c4439a6f7a2b3482fda,
+        type: 3}
+      propertyPath: pathCells.Array.data[0].y
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 6043555654375149453, guid: e24e23ebd4016c4439a6f7a2b3482fda,
+        type: 3}
+      propertyPath: pathCells.Array.data[1].y
+      value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 6043555654375149453, guid: e24e23ebd4016c4439a6f7a2b3482fda,
+        type: 3}
+      propertyPath: pathCells.Array.data[2].x
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 6043555654375149453, guid: e24e23ebd4016c4439a6f7a2b3482fda,
+        type: 3}
+      propertyPath: pathCells.Array.data[2].y
+      value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 6043555654375149453, guid: e24e23ebd4016c4439a6f7a2b3482fda,
+        type: 3}
+      propertyPath: pathCells.Array.data[3].x
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 6043555654375149453, guid: e24e23ebd4016c4439a6f7a2b3482fda,
+        type: 3}
+      propertyPath: pathCells.Array.data[3].y
+      value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 6043555654375149453, guid: e24e23ebd4016c4439a6f7a2b3482fda,
+        type: 3}
+      propertyPath: pathCells.Array.data[4].y
+      value: 6
+      objectReference: {fileID: 0}
     - target: {fileID: 6979141153136418948, guid: e24e23ebd4016c4439a6f7a2b3482fda,
         type: 3}
       propertyPath: m_LocalPosition.x

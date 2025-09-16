@@ -1,7 +1,7 @@
 using UnityEngine;
 
 [DisallowMultipleComponent]
-public class Buff : MonoBehaviour
+public class Buff : MonoBehaviour, IBoardCellOccupant
 {
     [Header("Buff")]
     [Min(1)] public int power = 1;             // health gained on consume
@@ -16,11 +16,18 @@ public class Buff : MonoBehaviour
     void Start()
     {
         if (grid == null) grid = FindFirstObjectByType<Grid2D>();
-        if (grid != null && grid.WorldToCell(transform.position, out var c))
-        {
+        SyncCellFromWorld();
+        if (grid != null) transform.position = grid.CellToWorldCenter(Cell);
+    }
+
+    // === IBoardCellOccupant ===
+    public Grid2D GetGrid() => grid != null ? grid : FindFirstObjectByType<Grid2D>();
+
+    public void SyncCellFromWorld()
+    {
+        var g = GetGrid();
+        if (g != null && g.WorldToCell(transform.position, out var c))
             Cell = c;
-            transform.position = grid.CellToWorldCenter(c);
-        }
     }
 
 #if UNITY_EDITOR
@@ -29,7 +36,8 @@ public class Buff : MonoBehaviour
         if (!Application.isPlaying)
         {
             if (grid == null) grid = FindFirstObjectByType<Grid2D>();
-            if (grid != null && grid.WorldToCell(transform.position, out var c))
+            var g = GetGrid();
+            if (g != null && g.WorldToCell(transform.position, out var c))
                 Cell = c;
         }
     }
