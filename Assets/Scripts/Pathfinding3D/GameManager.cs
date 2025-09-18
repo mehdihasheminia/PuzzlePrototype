@@ -21,19 +21,15 @@ public class GameManager : MonoBehaviour
     public TurnPhase CurrentTurn { get; private set; } = TurnPhase.Player;
     public bool IsPlayerTurn => CurrentTurn == TurnPhase.Player;
 
-    // ===== MOVERS =====
     [Header("AI Movers")]
     public List<GenericAIMover> movers = new List<GenericAIMover>();
 
-    // ===== ENEMIES =====
     [Header("Enemies")]
     public List<Enemy> enemies = new List<Enemy>();
 
-    // ===== BUFFS =====
     [Header("Buffs")]
     public List<Buff> buffs = new List<Buff>();
 
-    // ===== SWITCHES =====
     [Header("Switches")]
     public List<SwitchOccupant> switches = new List<SwitchOccupant>();
 
@@ -94,19 +90,18 @@ public class GameManager : MonoBehaviour
     IEnumerator ResolveAITurn(PlayerAgent agent)
     {
         CurrentTurn = TurnPhase.AI;
-        yield return null; // frame break
+        yield return null;
 
-        if (IsGameOver || agent == null) { yield break; }
+        if (IsGameOver || agent == null) yield break;
 
-        // (NEW) 0) Trigger switches first, using the player's final cell
+        // (NEW) Trigger switches based on the player's final cell
         for (int i = 0; i < switches.Count; i++)
         {
             var sw = switches[i];
-            if (sw == null) continue;
-            sw.TryTriggerForPlayer(agent.CurrentCell);
+            if (sw != null) sw.TryTriggerForPlayer(agent.CurrentCell);
         }
 
-        // 1) MOVE BOARD ELEMENTS
+        // 1) MOVE AI actors first (positions updated before hazards/buffs)
         for (int i = 0; i < movers.Count; i++)
         {
             var mv = movers[i];
@@ -139,14 +134,13 @@ public class GameManager : MonoBehaviour
         }
         if (healed > 0) agent.ApplyHeal(healed, capToMax: true);
 
-        // 4) Check win AFTER surviving AI turn
+        // 4) Win check
         if (!IsGameOver && FlagCell == agent.CurrentCell)
         {
             Win();
             yield break;
         }
 
-        if (!IsGameOver)
-            CurrentTurn = TurnPhase.Player;
+        if (!IsGameOver) CurrentTurn = TurnPhase.Player;
     }
 }

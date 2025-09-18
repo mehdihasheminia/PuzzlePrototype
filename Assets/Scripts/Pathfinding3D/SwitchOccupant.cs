@@ -1,18 +1,25 @@
 using UnityEngine;
+using UnityEngine.Events;
 
 [DisallowMultipleComponent]
 public class SwitchOccupant : MonoBehaviour, IBoardCellOccupant
 {
-    [Header("Refs")]
+    [Header("Placement")]
     public Grid2D grid;
-    public BoardPattern pattern;
+    public Vector2Int Cell { get; private set; }
 
     [Header("Behavior")]
-    [Tooltip("If true, switch toggles on every time the player ENDS a turn on this cell.")]
-    public bool toggleOnPlayerTurnEnd = true;
+    [Tooltip("Initial ON state when the scene starts.")]
     public bool startsOn = false;
 
-    public Vector2Int Cell { get; private set; }
+    [Tooltip("If true, the switch toggles when the player ENDS a turn on this cell.")]
+    public bool triggerOnPlayerTurnEnd = true;
+
+    [Header("Events")]
+    public UnityEvent onSwitchOn;
+    public UnityEvent onSwitchOff;
+    public UnityEvent<bool> onSwitchToggled; // passes new state
+
     bool _isOn;
 
     void OnEnable()
@@ -20,49 +27,51 @@ public class SwitchOccupant : MonoBehaviour, IBoardCellOccupant
         if (grid == null) grid = FindFirstObjectByType<Grid2D>();
         SyncCellFromWorld();
 
-        // Apply initial state
-        if (startsOn && !_isOn) { ApplyOn(); }
+        // Apply initial state without firing both events
+        _isOn = startsOn;
+        FireEvents(initialize: true);
     }
 
-    void OnDisable()
-    {
-        // Leave pattern as-is; if you want auto-cleanup when disabled, uncomment:
-        // if (_isOn) RevertOff();
-    }
-
-    // === IBoardCellOccupant ===
+    // ===== IBoardCellOccupant =====
     public Grid2D GetGrid() => grid != null ? grid : FindFirstObjectByType<Grid2D>();
 
     public void SyncCellFromWorld()
     {
         var g = GetGrid();
-        if (g != null && g.WorldToCell(transform.position, out var c))
-            Cell = c;
+        if (g != null && g.WorldToCell(transform.position, out var c)) Cell = c;
     }
 
-    // === Toggling API ===
-    public void Trigger()
-    {
-        if (pattern == null || grid == null) return;
-        if (_isOn) RevertOff();
-        else       ApplyOn();
-    }
-
+    // Called by GameManager after the player finishes moving
     public void TryTriggerForPlayer(Vector2Int playerCell)
     {
-        if (!toggleOnPlayerTurnEnd) return;
-        if (playerCell == Cell) Trigger();
+        if (triggerOnPlayerTurnEnd && playerCell == Cell)
+            Toggle();
     }
 
-    void ApplyOn()
+    public void Toggle()
     {
-        grid.ApplyPattern(pattern);
+        _isOn = !_isOn;
+        FireEvents();
+    }
+
+    public void SwitchOn()
+    {
+        if (_isOn) return;
         _isOn = true;
+        FireEvents();
     }
 
-    void RevertOff()
+    public void SwitchOff()
     {
-        grid.RevertPattern(pattern);
+        if (!_isOn) return;
         _isOn = false;
+        FireEvents();
+    }
+
+    void FireEvents(bool initialize = false)
+    {
+        onSwitchToggled?.Invoke(_isOn);
+        if (_isOn) { onSwitchOn?.Invoke();  if (!initialize) { /* optional: SFX */ } }
+        else       { onSwitchOff?.Invoke(); if (!initialize) { /* optional: SFX */ } }
     }
 }
