@@ -8,3 +8,4 @@ public interface IBoardCellOccupant
     /// <summary>Synchronize the cached Cell from the current Transform.worldPosition.</summary>
     void SyncCellFromWorld();
 }
+

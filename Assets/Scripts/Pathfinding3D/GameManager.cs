@@ -33,6 +33,10 @@ public class GameManager : MonoBehaviour
     [Header("Buffs")]
     public List<Buff> buffs = new List<Buff>();
 
+    // ===== SWITCHES =====
+    [Header("Switches")]
+    public List<SwitchOccupant> switches = new List<SwitchOccupant>();
+
     void Start()
     {
         if (grid == null) grid = FindFirstObjectByType<Grid2D>();
@@ -50,6 +54,9 @@ public class GameManager : MonoBehaviour
 
         if (buffs == null || buffs.Count == 0)
             buffs = new List<Buff>(FindObjectsByType<Buff>(FindObjectsSortMode.None));
+
+        if (switches == null || switches.Count == 0)
+            switches = new List<SwitchOccupant>(FindObjectsByType<SwitchOccupant>(FindObjectsSortMode.None));
 
         CurrentTurn = TurnPhase.Player;
         IsGameOver = false;
@@ -87,11 +94,19 @@ public class GameManager : MonoBehaviour
     IEnumerator ResolveAITurn(PlayerAgent agent)
     {
         CurrentTurn = TurnPhase.AI;
-        yield return null; // small frame break for clarity
+        yield return null; // frame break
 
         if (IsGameOver || agent == null) { yield break; }
 
-        // 0) MOVE BOARD ELEMENTS FIRST (so hazards/buffs use updated positions)
+        // (NEW) 0) Trigger switches first, using the player's final cell
+        for (int i = 0; i < switches.Count; i++)
+        {
+            var sw = switches[i];
+            if (sw == null) continue;
+            sw.TryTriggerForPlayer(agent.CurrentCell);
+        }
+
+        // 1) MOVE BOARD ELEMENTS
         for (int i = 0; i < movers.Count; i++)
         {
             var mv = movers[i];
@@ -100,7 +115,7 @@ public class GameManager : MonoBehaviour
             if (IsGameOver) yield break;
         }
 
-        // 1) HAZARDS (enemies) damage based on NEW enemy positions
+        // 2) HAZARDS
         int totalDamage = 0;
         foreach (var e in enemies)
         {
@@ -112,31 +127,25 @@ public class GameManager : MonoBehaviour
         if (totalDamage > 0)
         {
             agent.ApplyDamage(totalDamage);
-            Debug.Log($"Hazards dealt {totalDamage} health damage.");
             if (agent.currentHealth <= 0) { Lose(); yield break; }
         }
 
-        // 2) BUFFS (consumable, range 0) after hazards
+        // 3) BUFFS
         int healed = 0;
         foreach (var b in buffs)
         {
             if (b == null || !b.triggerOnTurnEndOnly) continue;
             healed += b.ConsumeIfApplicable(agent.CurrentCell);
         }
-        if (healed > 0)
-        {
-            agent.ApplyHeal(healed, capToMax: true);
-            Debug.Log($"+{healed} health from buffs.");
-        }
+        if (healed > 0) agent.ApplyHeal(healed, capToMax: true);
 
-        // 3) Check win AFTER surviving AI turn
+        // 4) Check win AFTER surviving AI turn
         if (!IsGameOver && FlagCell == agent.CurrentCell)
         {
             Win();
             yield break;
         }
 
-        // Back to player
         if (!IsGameOver)
             CurrentTurn = TurnPhase.Player;
     }

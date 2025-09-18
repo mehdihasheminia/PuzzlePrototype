@@ -16,11 +16,35 @@ public class Grid2D : MonoBehaviour
     public int Width  => board != null ? Mathf.Max(1, board.width)  : 1;
     public int Height => board != null ? Mathf.Max(1, board.height) : 1;
 
+    // ===== Runtime overlays =====
+    // Cells made un/walkable by switches/patterns
+    readonly HashSet<Vector2Int> _forcedUnwalkable = new();
+    readonly HashSet<Vector2Int> _forcedWalkable   = new();
+
+    // Cells blocked by dynamic occupants (e.g., obstacles)
+    readonly HashSet<Vector2Int> _blockedByOccupants = new();
+    readonly Dictionary<IBoardAffectsWalkability, List<Vector2Int>> _blockers = new();
+
+    // For optional undo of applied patterns
+    readonly HashSet<BoardPattern> _activePatterns = new();
+
     public bool InBounds(Vector2Int c) =>
         c.x >= 0 && c.x < Width && c.y >= 0 && c.y < Height;
 
-    public bool IsWalkable(Vector2Int c) =>
-        board != null && InBounds(c) && board.GetWalkable(c.x, c.y);
+    public bool IsWalkable(Vector2Int c)
+    {
+        if (!InBounds(c)) return false;
+
+        // Base board
+        bool walk = board == null || board.GetWalkable(c.x, c.y);
+        // Pattern overlays
+        if (_forcedUnwalkable.Contains(c)) walk = false;
+        if (_forcedWalkable.Contains(c))   walk = true;
+        // Dynamic blockers (obstacles etc.)
+        if (_blockedByOccupants.Contains(c)) walk = false;
+
+        return walk;
+    }
 
     public Vector3 CellToWorldCenter(Vector2Int c)
     {
@@ -39,10 +63,9 @@ public class Grid2D : MonoBehaviour
 
     public IEnumerable<Vector2Int> GetNeighbors4(Vector2Int c)
     {
-        var dirs = _dirs4;
-        for (int i = 0; i < dirs.Length; i++)
+        for (int i = 0; i < _dirs4.Length; i++)
         {
-            var n = c + dirs[i];
+            var n = c + _dirs4[i];
             if (InBounds(n) && IsWalkable(n))
                 yield return n;
         }
@@ -56,6 +79,71 @@ public class Grid2D : MonoBehaviour
         new Vector2Int( 0,-1),
     };
 
+    // ===== Pattern API (used by SwitchOccupant) =====
+    public void ApplyPattern(BoardPattern pattern)
+    {
+        if (pattern == null) return;
+        foreach (var c in pattern.makeUnwalkable)
+            if (InBounds(c)) { _forcedWalkable.Remove(c); _forcedUnwalkable.Add(c); }
+        foreach (var c in pattern.makeWalkable)
+            if (InBounds(c)) { _forcedUnwalkable.Remove(c); _forcedWalkable.Add(c); }
+        _activePatterns.Add(pattern);
+    }
+
+    public void RevertPattern(BoardPattern pattern)
+    {
+        if (pattern == null || !_activePatterns.Contains(pattern)) return;
+        foreach (var c in pattern.makeUnwalkable)
+            if (InBounds(c)) _forcedUnwalkable.Remove(c);
+        foreach (var c in pattern.makeWalkable)
+            if (InBounds(c)) _forcedWalkable.Remove(c);
+        _activePatterns.Remove(pattern);
+    }
+
+    // ===== Dynamic blockers API (used by ObstacleOccupant and movers) =====
+    public void RegisterDynamicBlocker(IBoardAffectsWalkability blocker)
+    {
+        if (blocker == null) return;
+        if (_blockers.ContainsKey(blocker)) { NotifyDynamicOccupantMoved(blocker); return; }
+        var cells = CollectValid(blocker.GetBlockedCells());
+        _blockers[blocker] = cells;
+        for (int i = 0; i < cells.Count; i++) _blockedByOccupants.Add(cells[i]);
+    }
+
+    public void UnregisterDynamicBlocker(IBoardAffectsWalkability blocker)
+    {
+        if (blocker == null) return;
+        if (_blockers.TryGetValue(blocker, out var prev))
+        {
+            for (int i = 0; i < prev.Count; i++) _blockedByOccupants.Remove(prev[i]);
+            _blockers.Remove(blocker);
+        }
+    }
+
+    public void NotifyDynamicOccupantMoved(IBoardAffectsWalkability blocker)
+    {
+        if (blocker == null) return;
+
+        // Remove previous footprint
+        if (_blockers.TryGetValue(blocker, out var prev))
+        {
+            for (int i = 0; i < prev.Count; i++) _blockedByOccupants.Remove(prev[i]);
+        }
+
+        // Add new footprint
+        var cur = CollectValid(blocker.GetBlockedCells());
+        _blockers[blocker] = cur;
+        for (int i = 0; i < cur.Count; i++) _blockedByOccupants.Add(cur[i]);
+    }
+
+    List<Vector2Int> CollectValid(IEnumerable<Vector2Int> cells)
+    {
+        var list = new List<Vector2Int>();
+        if (cells == null) return list;
+        foreach (var c in cells) if (InBounds(c)) list.Add(c);
+        return list;
+    }
+
 #if UNITY_EDITOR
     void OnDrawGizmos()
     {
@@ -68,13 +156,14 @@ public class Grid2D : MonoBehaviour
         var bl = new Vector3(origin.x, gridY, origin.z);
         Gizmos.DrawWireCube(bl + total * 0.5f, total);
 
-        // Cells with walkability
+        // Cells w/ final walkability
         for (int x = 0; x < w; x++)
         for (int y = 0; y < h; y++)
         {
-            bool walk = board == null ? true : board.GetWalkable(x, y);
+            var c = new Vector2Int(x, y);
+            bool walk = IsWalkable(c);
             Gizmos.color = walk ? new Color(0f, 1f, 0f, 0.18f) : new Color(1f, 0f, 0f, 0.35f);
-            var center = CellToWorldCenter(new Vector2Int(x, y));
+            var center = CellToWorldCenter(c);
             Gizmos.DrawCube(center, new Vector3(cellSize * 0.98f, 0.01f, cellSize * 0.98f));
         }
 

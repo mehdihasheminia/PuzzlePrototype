@@ -46,3 +46,9 @@ public class BoardAsset : ScriptableObject
 
     public IReadOnlyList<bool> Data => walkable; // for read-only access
 }
+
+//1- more detailed tile/grid that allows us to increase the details like ramps and holes
+//2- Switch tiles that bring up a bridge
+//3- You can modify terrains so that a path is made for you, block enemies, blocks enemy shots or direct enemies to another path
+//4- Also modifying terrains can mean openning/closing doors. Moving cover blocks. 
+//5- Tiles that you can stay on them one turn. So this way players cannot skip turn or modify terrain

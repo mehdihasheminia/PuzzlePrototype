@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 /// <summary>
 /// Generic mover for board elements (enemies, buffs, props).
@@ -25,7 +24,7 @@ public class GenericAIMover : MonoBehaviour
     [Min(1)] public int stepsPerAITurn = 1;          // how many cell steps per AI turn
     public bool pingPong = true;                     // return when reaching an end
     public bool snapToCellCenterOnStart = true;      // snap this transform to the start cell center at Play
-    
+
     [Header("Visualization (Runtime)")]
     public bool visualizePath = true;
     [Min(0.001f)] public float lineWidth = 0.035f;
@@ -42,11 +41,9 @@ public class GenericAIMover : MonoBehaviour
 
     void Start()
     {
-        // If path is empty, seed with current cell so we have a valid position.
         if (grid != null && pathCells.Count == 0 && grid.WorldToCell(transform.position, out var c))
             pathCells.Add(c);
 
-        // Optionally snap to the first cell center.
         if (snapToCellCenterOnStart && grid != null && pathCells.Count > 0)
         {
             transform.position = grid.CellToWorldCenter(pathCells[0]);
@@ -55,44 +52,32 @@ public class GenericAIMover : MonoBehaviour
 
         SetupLineRenderer();
         RefreshLineRenderer();
-        // Ensure any occupant (Enemy, Buff, etc.) has its Cell synced
-        TrySyncOccupantCell();
+        TrySyncOccupantCell(); // initial sync at spawn
     }
 
     void SetupLineRenderer()
     {
         if (!visualizePath) return;
-
         lineRenderer = GetComponent<LineRenderer>();
         if (lineRenderer == null) lineRenderer = gameObject.AddComponent<LineRenderer>();
-
         lineRenderer.useWorldSpace = true;
         lineRenderer.widthMultiplier = lineWidth;
         lineRenderer.shadowBias = 0f;
         lineRenderer.textureMode = LineTextureMode.Stretch;
         lineRenderer.numCornerVertices = 2;
         lineRenderer.numCapVertices = 2;
-        // Leave default material/color so you can skin globally; you can assign a material in the inspector if needed.
     }
 
     void RefreshLineRenderer()
     {
         if (!visualizePath || lineRenderer == null || grid == null || pathCells == null) return;
-
         if (pathCells.Count == 0) { lineRenderer.positionCount = 0; return; }
-
         lineRenderer.positionCount = pathCells.Count;
         for (int i = 0; i < pathCells.Count; i++)
-        {
-            var p = grid.CellToWorldCenter(pathCells[i]) + Vector3.up * lineYOffset;
-            lineRenderer.SetPosition(i, p);
-        }
+            lineRenderer.SetPosition(i, grid.CellToWorldCenter(pathCells[i]) + Vector3.up * lineYOffset);
     }
 
-    /// <summary>
-    /// Called by GameManager during the AI phase.
-    /// Moves up to stepsPerAITurn segments along the path.
-    /// </summary>
+    /// <summary>Called by GameManager during the AI phase.</summary>
     public IEnumerator RunAIMove()
     {
         if (grid == null || pathCells == null || pathCells.Count < 2 || stepsPerAITurn <= 0)
@@ -102,23 +87,18 @@ public class GenericAIMover : MonoBehaviour
         {
             int nextIndex = _pathIndex + _dir;
 
-            // If at ends, decide what to do based on ping-pong
             if (nextIndex < 0 || nextIndex >= pathCells.Count)
             {
                 if (!pingPong)
                 {
-                    // Clamp at the last valid index; no more movement this turn.
                     _pathIndex = Mathf.Clamp(_pathIndex, 0, pathCells.Count - 1);
                     break;
                 }
                 _dir = -_dir;
                 nextIndex = _pathIndex + _dir;
-
-                // If still invalid (single-point path), bail
                 if (nextIndex < 0 || nextIndex >= pathCells.Count) break;
             }
 
-            // Move smoothly from current cell to next cell
             Vector3 from = grid.CellToWorldCenter(pathCells[_pathIndex]);
             Vector3 to   = grid.CellToWorldCenter(pathCells[nextIndex]);
 
@@ -133,24 +113,26 @@ public class GenericAIMover : MonoBehaviour
             }
 
             _pathIndex = nextIndex;
-
-            // After landing on a new cell, sync any attached occupant component
-            TrySyncOccupantCell();
+            TrySyncOccupantCell(); // <-- notify grid if this occupant blocks walkability
         }
 
-        // Update the visual after movement (in case cell sizes/origin changed)
         RefreshLineRenderer();
     }
 
     void TrySyncOccupantCell()
     {
-        // If this thing is an Enemy/Buff/etc. implementing IBoardCellOccupant, update its cached Cell.
         var occ = GetComponent<IBoardCellOccupant>();
         if (occ != null) occ.SyncCellFromWorld();
+
+        // If this thing affects walkability (e.g., ObstacleOccupant), let the grid update overlays.
+        if (grid != null)
+        {
+            var blocker = GetComponent<IBoardAffectsWalkability>();
+            if (blocker != null) grid.NotifyDynamicOccupantMoved(blocker);
+        }
     }
 
 #if UNITY_EDITOR
-    // Also draw gizmos in editor to help layout
     void OnDrawGizmosSelected()
     {
         if (grid == null || pathCells == null || pathCells.Count == 0) return;
