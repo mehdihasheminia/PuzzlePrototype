@@ -36,40 +36,46 @@ public class SwitchApplyPattern : MonoBehaviour
     {
         if (grid == null || grid.board == null || pattern == null) return;
 
-        // makeUnwalkable
-        for (int i = 0; i < pattern.makeUnwalkable.Count; i++)
+        grid.board.EnsureSize();
+
+        foreach (var (cell, status) in pattern.EnumerateBoardCells())
         {
-            var c = pattern.makeUnwalkable[i];
-            if (grid.board.InBounds(c.x, c.y))
-                grid.board.SetWalkable(c.x, c.y, false);
+            if (!grid.board.InBounds(cell.x, cell.y))
+                continue;
+
+            switch (status)
+            {
+                case CellStatusGridAsset.CellStatus.Blocked:
+                    grid.board.SetStatus(cell.x, cell.y, CellStatusGridAsset.CellStatus.Blocked);
+                    break;
+                case CellStatusGridAsset.CellStatus.Walkable:
+                    grid.board.SetStatus(cell.x, cell.y, CellStatusGridAsset.CellStatus.Walkable);
+                    break;
+            }
         }
-        // makeWalkable
-        for (int i = 0; i < pattern.makeWalkable.Count; i++)
-        {
-            var c = pattern.makeWalkable[i];
-            if (grid.board.InBounds(c.x, c.y))
-                grid.board.SetWalkable(c.x, c.y, true);
-        }
-        // Grid2D reads BoardAsset via IsWalkable(), so changes take effect immediately. :contentReference[oaicite:7]{index=7}
+        // Grid2D reads BoardAsset via IsWalkable(), so changes take effect immediately.
     }
 
     void Revert()
     {
         if (grid == null || grid.board == null || pattern == null) return;
 
-        // Revert by restoring base meaning: un-do our explicit sets
-        // For simplicity, we invert the effect:
-        for (int i = 0; i < pattern.makeUnwalkable.Count; i++)
+        grid.board.EnsureSize();
+
+        foreach (var (cell, status) in pattern.EnumerateBoardCells())
         {
-            var c = pattern.makeUnwalkable[i];
-            if (grid.board.InBounds(c.x, c.y))
-                grid.board.SetWalkable(c.x, c.y, true);
-        }
-        for (int i = 0; i < pattern.makeWalkable.Count; i++)
-        {
-            var c = pattern.makeWalkable[i];
-            if (grid.board.InBounds(c.x, c.y))
-                grid.board.SetWalkable(c.x, c.y, false);
+            if (!grid.board.InBounds(cell.x, cell.y))
+                continue;
+
+            switch (status)
+            {
+                case CellStatusGridAsset.CellStatus.Blocked:
+                    grid.board.SetStatus(cell.x, cell.y, CellStatusGridAsset.CellStatus.Walkable);
+                    break;
+                case CellStatusGridAsset.CellStatus.Walkable:
+                    grid.board.SetStatus(cell.x, cell.y, CellStatusGridAsset.CellStatus.Blocked);
+                    break;
+            }
         }
     }
 }
