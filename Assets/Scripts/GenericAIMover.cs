@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 /// <summary>
@@ -17,6 +18,16 @@ public class GenericAIMover : MonoBehaviour
     [Header("Path (Grid Cells)")]
     [Tooltip("Ordered list of grid cells to follow. The object will move from index to index.")]
     public List<Vector2Int> pathCells = new List<Vector2Int>();
+
+    [Header("Path (Optional Asset)")]
+    [Tooltip("Optional status grid describing the path. Cells marked Walkable will be converted into an ordered path.")]
+    public CellStatusGridAsset pathAsset;
+
+    [Tooltip("Board cell that the asset's (0,0) maps to when generating the path.")]
+    public Vector2Int pathOrigin;
+
+    [Tooltip("If enabled, automatically rebuilds pathCells from the path asset when values change in the editor.")]
+    public bool autoSyncPathFromAsset = true;
 
     [Header("Movement")]
     [Min(0.1f)] public float moveSpeed = 4f;         // units / sec between adjacent cell centers
@@ -41,6 +52,9 @@ public class GenericAIMover : MonoBehaviour
 
     void Start()
     {
+        if (pathAsset != null && autoSyncPathFromAsset)
+            TrySyncPathFromAsset();
+
         if (grid != null && pathCells.Count == 0 && grid.WorldToCell(transform.position, out var c))
             pathCells.Add(c);
 
@@ -53,6 +67,19 @@ public class GenericAIMover : MonoBehaviour
         SetupLineRenderer();
         RefreshLineRenderer();
         TrySyncOccupantCell(); // initial sync at spawn
+    }
+
+    /// <summary>Regenerates pathCells from the assigned pathAsset.</summary>
+    public bool TrySyncPathFromAsset()
+    {
+        if (pathAsset == null) return false;
+
+        if (!TryBuildOrderedPathFromAsset(out var ordered))
+            return false;
+
+        pathCells = ordered;
+        RefreshLineRenderer();
+        return true;
     }
 
     void SetupLineRenderer()
@@ -130,6 +157,113 @@ public class GenericAIMover : MonoBehaviour
             var blocker = GetComponent<IBoardAffectsWalkability>();
             if (blocker != null) grid.NotifyDynamicOccupantMoved(blocker);
         }
+    }
+
+    void OnValidate()
+    {
+#if UNITY_EDITOR
+        if (!Application.isPlaying && autoSyncPathFromAsset)
+            TrySyncPathFromAsset();
+#endif
+    }
+
+    bool TryBuildOrderedPathFromAsset(out List<Vector2Int> ordered)
+    {
+        ordered = null;
+        if (pathAsset == null) return false;
+
+        pathAsset.EnsureSize();
+
+        var candidates = new HashSet<Vector2Int>();
+        foreach (var (cell, status) in pathAsset.EnumerateCells())
+        {
+            if (status != CellStatusGridAsset.CellStatus.Walkable)
+                continue;
+            candidates.Add(pathOrigin + cell);
+        }
+
+        if (candidates.Count == 0)
+        {
+            ordered = new List<Vector2Int>();
+            return true;
+        }
+
+        static IEnumerable<Vector2Int> Directions()
+        {
+            yield return new Vector2Int(1, 0);
+            yield return new Vector2Int(-1, 0);
+            yield return new Vector2Int(0, 1);
+            yield return new Vector2Int(0, -1);
+        }
+
+        var neighborMap = new Dictionary<Vector2Int, List<Vector2Int>>();
+        foreach (var cell in candidates)
+        {
+            var neighbors = new List<Vector2Int>();
+            foreach (var dir in Directions())
+            {
+                var n = cell + dir;
+                if (candidates.Contains(n))
+                    neighbors.Add(n);
+            }
+            neighborMap[cell] = neighbors;
+        }
+
+        Vector2Int start = default;
+        bool startFound = false;
+        foreach (var kvp in neighborMap)
+        {
+            if (kvp.Value.Count <= 1)
+            {
+                start = kvp.Key;
+                startFound = true;
+                break;
+            }
+        }
+
+        if (!startFound)
+            start = neighborMap.Keys.FirstOrDefault();
+
+        var result = new List<Vector2Int>();
+        var visited = new HashSet<Vector2Int>();
+        Vector2Int current = start;
+        Vector2Int prev = new Vector2Int(int.MinValue, int.MinValue);
+
+        while (true)
+        {
+            if (!visited.Add(current))
+            {
+                // Loop detected – unsupported.
+                return false;
+            }
+
+            result.Add(current);
+
+            var neighbors = neighborMap[current];
+            if (neighbors.Count > 2)
+            {
+                // Branching path not supported by ordered path extraction.
+                return false;
+            }
+
+            Vector2Int? next = null;
+            for (int i = 0; i < neighbors.Count; i++)
+            {
+                var candidate = neighbors[i];
+                if (candidate == prev) continue;
+                next = candidate;
+                break;
+            }
+
+            if (next == null)
+                break;
+
+            prev = current;
+            current = next.Value;
+        }
+
+        ordered = result;
+        return true;
     }
 
 #if UNITY_EDITOR

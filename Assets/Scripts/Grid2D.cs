@@ -83,20 +83,46 @@ public class Grid2D : MonoBehaviour
     public void ApplyPattern(BoardPattern pattern)
     {
         if (pattern == null) return;
-        foreach (var c in pattern.makeUnwalkable)
-            if (InBounds(c)) { _forcedWalkable.Remove(c); _forcedUnwalkable.Add(c); }
-        foreach (var c in pattern.makeWalkable)
-            if (InBounds(c)) { _forcedUnwalkable.Remove(c); _forcedWalkable.Add(c); }
+
+        foreach (var (cell, status) in pattern.EnumerateBoardCells())
+        {
+            if (!InBounds(cell)) continue;
+
+            switch (status)
+            {
+                case CellStatusGridAsset.CellStatus.Blocked:
+                    _forcedWalkable.Remove(cell);
+                    _forcedUnwalkable.Add(cell);
+                    break;
+                case CellStatusGridAsset.CellStatus.Walkable:
+                    _forcedUnwalkable.Remove(cell);
+                    _forcedWalkable.Add(cell);
+                    break;
+            }
+        }
+
         _activePatterns.Add(pattern);
     }
 
     public void RevertPattern(BoardPattern pattern)
     {
         if (pattern == null || !_activePatterns.Contains(pattern)) return;
-        foreach (var c in pattern.makeUnwalkable)
-            if (InBounds(c)) _forcedUnwalkable.Remove(c);
-        foreach (var c in pattern.makeWalkable)
-            if (InBounds(c)) _forcedWalkable.Remove(c);
+
+        foreach (var (cell, status) in pattern.EnumerateBoardCells())
+        {
+            if (!InBounds(cell)) continue;
+
+            switch (status)
+            {
+                case CellStatusGridAsset.CellStatus.Blocked:
+                    _forcedUnwalkable.Remove(cell);
+                    break;
+                case CellStatusGridAsset.CellStatus.Walkable:
+                    _forcedWalkable.Remove(cell);
+                    break;
+            }
+        }
+
         _activePatterns.Remove(pattern);
     }
 
