@@ -79,15 +79,18 @@ public class GameManager : MonoBehaviour
         onHealthChanged?.Invoke(current, max);
     }
 
-    /// <summary>Called by PlayerAgent when its movement for the turn is fully finished.</summary>
-    public void NotifyPlayerTurnEnded(PlayerAgent agent)
+    /// <summary>
+    /// Called when the player completes their action for the turn.
+    /// Set <paramref name="resolveTurnEndEffects"/> to false to skip hazard / buff processing (used for drag actions).
+    /// </summary>
+    public void NotifyPlayerTurnEnded(PlayerAgent agent, bool resolveTurnEndEffects = true)
     {
         if (IsGameOver) return;
         if (CurrentTurn != TurnPhase.Player) return;
-        StartCoroutine(ResolveAITurn(agent));
+        StartCoroutine(ResolveAITurn(agent, resolveTurnEndEffects));
     }
 
-    IEnumerator ResolveAITurn(PlayerAgent agent)
+    IEnumerator ResolveAITurn(PlayerAgent agent, bool resolveTurnEndEffects)
     {
         CurrentTurn = TurnPhase.AI;
         yield return null;
@@ -111,28 +114,31 @@ public class GameManager : MonoBehaviour
         }
 
         // 2) HAZARDS
-        int totalDamage = 0;
-        foreach (var e in enemies)
+        if (resolveTurnEndEffects)
         {
-            if (e == null || !e.triggerOnTurnEndOnly) continue;
-            int dx = Mathf.Abs(e.Cell.x - agent.CurrentCell.x);
-            int dy = Mathf.Abs(e.Cell.y - agent.CurrentCell.y);
-            if (dx + dy <= e.range) totalDamage += e.power;
-        }
-        if (totalDamage > 0)
-        {
-            agent.ApplyDamage(totalDamage);
-            if (agent.currentHealth <= 0) { Lose(); yield break; }
-        }
+            int totalDamage = 0;
+            foreach (var e in enemies)
+            {
+                if (e == null || !e.triggerOnTurnEndOnly) continue;
+                int dx = Mathf.Abs(e.Cell.x - agent.CurrentCell.x);
+                int dy = Mathf.Abs(e.Cell.y - agent.CurrentCell.y);
+                if (dx + dy <= e.range) totalDamage += e.power;
+            }
+            if (totalDamage > 0)
+            {
+                agent.ApplyDamage(totalDamage);
+                if (agent.currentHealth <= 0) { Lose(); yield break; }
+            }
 
-        // 3) BUFFS
-        int healed = 0;
-        foreach (var b in buffs)
-        {
-            if (b == null || !b.triggerOnTurnEndOnly) continue;
-            healed += b.ConsumeIfApplicable(agent.CurrentCell);
+            // 3) BUFFS
+            int healed = 0;
+            foreach (var b in buffs)
+            {
+                if (b == null || !b.triggerOnTurnEndOnly) continue;
+                healed += b.ConsumeIfApplicable(agent.CurrentCell);
+            }
+            if (healed > 0) agent.ApplyHeal(healed, capToMax: true);
         }
-        if (healed > 0) agent.ApplyHeal(healed, capToMax: true);
 
         // 4) Win check
         if (!IsGameOver && FlagCell == agent.CurrentCell)
