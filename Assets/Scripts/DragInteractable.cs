@@ -51,6 +51,9 @@ public class DragInteractable : MonoBehaviour
     int _currentStep;
     float _currentTranslationOffset;
     float _currentRotationAngle;
+    float _pointerStartAxisDistance;
+    Vector3 _rotationReferenceDir;
+    float _rotationPointerOffset;
 
     void Awake()
     {
@@ -103,12 +106,28 @@ public class DragInteractable : MonoBehaviour
                 _translationAxisWorld = Vector3.right;
             _translationAxisWorld.y = 0f;
             _translationAxisWorld = _translationAxisWorld.normalized;
+
+            Vector3 planePos = ProjectPointToPlane(pointerWorldPosition, g.gridY);
+            _pointerStartAxisDistance = Vector3.Dot(planePos - _startWorld, _translationAxisWorld);
         }
         else
         {
             _rotationAxisWorld = rotationAxis.sqrMagnitude < 0.0001f ? Vector3.up : rotationAxis.normalized;
             _pivotWorld = transform.position;
             _rotationAxisWorld.Normalize();
+
+            Vector3 fromStart = ProjectVectorOnPlane(_startRotation * Vector3.forward, _rotationAxisWorld);
+            if (fromStart.sqrMagnitude < 0.0001f)
+                fromStart = ProjectVectorOnPlane(transform.forward, _rotationAxisWorld);
+            if (fromStart.sqrMagnitude < 0.0001f)
+                fromStart = Vector3.forward;
+
+            Vector3 pointerDir = ProjectVectorOnPlane(pointerWorldPosition - _pivotWorld, _rotationAxisWorld);
+            if (pointerDir.sqrMagnitude < 0.0001f)
+                pointerDir = fromStart;
+
+            _rotationReferenceDir = fromStart.normalized;
+            _rotationPointerOffset = Vector3.SignedAngle(_rotationReferenceDir, pointerDir.normalized, _rotationAxisWorld);
         }
 
         UpdateDrag(pointerWorldPosition);
@@ -126,7 +145,7 @@ public class DragInteractable : MonoBehaviour
         {
             Vector3 planePos = ProjectPointToPlane(pointerWorldPosition, g.gridY);
             Vector3 delta = planePos - _startWorld;
-            float axisDistance = Vector3.Dot(delta, _translationAxisWorld);
+            float axisDistance = Vector3.Dot(delta, _translationAxisWorld) - _pointerStartAxisDistance;
             float cellSize = Mathf.Max(0.0001f, g.cellSize);
             float maxDistance = cellSize * Mathf.Max(0, maxTranslationSteps);
             float minDistance = cellSize * Mathf.Min(0, minTranslationSteps);
@@ -141,21 +160,15 @@ public class DragInteractable : MonoBehaviour
         else
         {
             Vector3 planePos = ProjectPointToPlane(pointerWorldPosition, g.gridY);
-            Vector3 fromStart = ProjectVectorOnPlane(_startRotation * Vector3.forward, _rotationAxisWorld);
-            if (fromStart.sqrMagnitude < 0.0001f)
-            {
-                fromStart = ProjectVectorOnPlane(transform.forward, _rotationAxisWorld);
-            }
             Vector3 currentDir = ProjectVectorOnPlane(planePos - _pivotWorld, _rotationAxisWorld);
             if (currentDir.sqrMagnitude < 0.0001f)
             {
-                currentDir = fromStart;
+                currentDir = _rotationReferenceDir;
             }
 
-            fromStart.Normalize();
             currentDir.Normalize();
 
-            float signedAngle = Vector3.SignedAngle(fromStart, currentDir, _rotationAxisWorld);
+            float signedAngle = Vector3.SignedAngle(_rotationReferenceDir, currentDir, _rotationAxisWorld) - _rotationPointerOffset;
             float snapAngle = Mathf.Max(0.0001f, rotationSnapAngle);
             float maxAngle = snapAngle * Mathf.Max(0, maxRotationSteps);
             float minAngle = snapAngle * Mathf.Min(0, minRotationSteps);
@@ -250,6 +263,9 @@ public class DragInteractable : MonoBehaviour
         _currentTranslationOffset = 0f;
         _currentRotationAngle = 0f;
         _currentStep = 0;
+        _pointerStartAxisDistance = 0f;
+        _rotationPointerOffset = 0f;
+        _rotationReferenceDir = Vector3.zero;
     }
 
     void PostDragSync()
