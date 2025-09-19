@@ -92,7 +92,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   range: 0
-  power: 1
   triggerOnTurnEndOnly: 1
   grid: {fileID: 0}
 --- !u!1001 &2406896929179265

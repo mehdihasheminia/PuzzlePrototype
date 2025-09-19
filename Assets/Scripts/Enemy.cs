@@ -5,7 +5,6 @@ public class Enemy : MonoBehaviour, IBoardCellOccupant
 {
     [Header("Enemy Stats")]
     [Min(0)] public int range = 0;  // Manhattan range
-    [Min(0)] public int power = 1;  // Health lost if player ends turn within range
     [Tooltip("If true, only triggers when the player ENDS a turn; passing through mid-path has no effect.")]
     public bool triggerOnTurnEndOnly = true;
 

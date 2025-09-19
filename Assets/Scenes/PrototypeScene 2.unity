@@ -526,9 +526,6 @@ MonoBehaviour:
   onLose:
     m_PersistentCalls:
       m_Calls: []
-  onHealthChanged:
-    m_PersistentCalls:
-      m_Calls: []
   movers: []
   enemies:
   - {fileID: 2094140864}
@@ -3280,9 +3277,7 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  maxHealth: 10
-  currentHealth: 0
-  maxStepsPerTurn: 5
+  cellsPerTurn: 5
 --- !u!136 &1204494851
 CapsuleCollider:
   m_ObjectHideFlags: 0

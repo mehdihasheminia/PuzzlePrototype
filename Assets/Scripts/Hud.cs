@@ -15,11 +15,10 @@ public class Hud : MonoBehaviour
     
     void Start()
     {
-        OnEnergyChanged(m_PlayerAgent.maxHealth, m_PlayerAgent.currentHealth);
-        
+        UpdateEnergyDisplay();
+
         m_GameManager.onWin.AddListener(OnWin);
         m_GameManager.onLose.AddListener(OnLose);
-        m_GameManager.onHealthChanged.AddListener(OnEnergyChanged);
     }
 
     void OnWin()
@@ -32,8 +31,9 @@ public class Hud : MonoBehaviour
         m_LosePanel.gameObject.SetActive(true);
     }
     
-    void OnEnergyChanged(int current, int max)
+    void UpdateEnergyDisplay()
     {
-        m_EnergyText.text = $"H: {current}";
+        if (m_PlayerAgent == null || m_EnergyText == null) return;
+        m_EnergyText.text = $"Energy: {m_PlayerAgent.CellsPerTurn} cells/turn";
     }
 }

@@ -45,7 +45,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e7599445805b5984396111f82860273c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  power: 1
+  extraTurns: 1
   triggerOnTurnEndOnly: 1
   grid: {fileID: 0}
 --- !u!1001 &3978387870814737037
