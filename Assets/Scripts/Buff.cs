@@ -4,8 +4,8 @@ using UnityEngine;
 public class Buff : MonoBehaviour, IBoardCellOccupant
 {
     [Header("Buff")]
-    [Min(1)] public int power = 1;             // health gained on consume
-    [Tooltip("Buffs trigger only if the player ENDS a turn on this exact cell.")]
+    [Min(1)] public int extraTurns = 1;        // additional turns granted on consume
+    [Tooltip("If true, the buff only triggers when the player finishes their move on this cell.")]
     public bool triggerOnTurnEndOnly = true;   // remains for consistency
     public bool consumed { get; private set; } // persisted only while scene runs
 
@@ -52,18 +52,23 @@ public class Buff : MonoBehaviour, IBoardCellOccupant
 
         #if UNITY_EDITOR
         UnityEditor.Handles.color = consumed ? new Color(0.6f, 0.9f, 0.9f, 0.6f) : new Color(0f, 1f, 1f, 1f);
-        UnityEditor.Handles.Label(center + new Vector3(0, 0.03f, 0), consumed ? $"BUFF (used)" : $"BUFF +{power} HP");
+        UnityEditor.Handles.Label(center + new Vector3(0, 0.03f, 0), consumed ? $"BUFF (used)" : $"BUFF +{extraTurns} Turn{(extraTurns > 1 ? "s" : string.Empty)}");
         #endif
     }
 #endif
 
-    /// <summary>Called in AI turn if the player ended their move on this cell.</summary>
-    public int ConsumeIfApplicable(Vector2Int playerCell)
+    /// <summary>Consumes the buff if the player occupies this cell.</summary>
+    /// <param name="playerCell">Player's current cell.</param>
+    /// <param name="triggeredDuringMovement">True if the player is still moving towards another cell.</param>
+    /// <returns>The number of extra turns granted.</returns>
+    public int Consume(Vector2Int playerCell, bool triggeredDuringMovement)
     {
         if (consumed) return 0;
         if (playerCell != Cell) return 0; // range is exactly 0
+        if (triggerOnTurnEndOnly && triggeredDuringMovement) return 0;
+
         consumed = true;
         gameObject.SetActive(false);
-        return power;
+        return Mathf.Max(0, extraTurns);
     }
 }

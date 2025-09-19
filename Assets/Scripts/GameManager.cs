@@ -14,7 +14,6 @@ public class GameManager : MonoBehaviour
     [Header("Events")]
     public UnityEvent onWin;
     public UnityEvent onLose;
-    public UnityEvent<int, int> onHealthChanged; // current, max
 
     public bool IsGameOver { get; private set; }
     public Vector2Int FlagCell { get; private set; }
@@ -32,6 +31,8 @@ public class GameManager : MonoBehaviour
 
     [Header("Switches")]
     public List<SwitchOccupant> switches = new List<SwitchOccupant>();
+
+    int _extraTurnsQueued = 0;
 
     void Start()
     {
@@ -71,12 +72,7 @@ public class GameManager : MonoBehaviour
         if (IsGameOver) return;
         IsGameOver = true;
         onLose?.Invoke();
-        Debug.Log("💀 Game Over (health depleted)");
-    }
-
-    public void OnHealthChanged(int current, int max)
-    {
-        onHealthChanged?.Invoke(current, max);
+        Debug.Log("💀 Game Over");
     }
 
     /// <summary>
@@ -87,6 +83,13 @@ public class GameManager : MonoBehaviour
     {
         if (IsGameOver) return;
         if (CurrentTurn != TurnPhase.Player) return;
+
+        if (_extraTurnsQueued > 0)
+        {
+            _extraTurnsQueued = Mathf.Max(0, _extraTurnsQueued - 1);
+            return;
+        }
+
         StartCoroutine(ResolveAITurn(agent, resolveTurnEndEffects));
     }
 
@@ -116,28 +119,17 @@ public class GameManager : MonoBehaviour
         // 2) HAZARDS
         if (resolveTurnEndEffects)
         {
-            int totalDamage = 0;
             foreach (var e in enemies)
             {
                 if (e == null || !e.triggerOnTurnEndOnly) continue;
                 int dx = Mathf.Abs(e.Cell.x - agent.CurrentCell.x);
                 int dy = Mathf.Abs(e.Cell.y - agent.CurrentCell.y);
-                if (dx + dy <= e.range) totalDamage += e.power;
+                if (dx + dy <= e.range)
+                {
+                    Lose();
+                    yield break;
+                }
             }
-            if (totalDamage > 0)
-            {
-                agent.ApplyDamage(totalDamage);
-                if (agent.currentHealth <= 0) { Lose(); yield break; }
-            }
-
-            // 3) BUFFS
-            int healed = 0;
-            foreach (var b in buffs)
-            {
-                if (b == null || !b.triggerOnTurnEndOnly) continue;
-                healed += b.ConsumeIfApplicable(agent.CurrentCell);
-            }
-            if (healed > 0) agent.ApplyHeal(healed, capToMax: true);
         }
 
         // 4) Win check
@@ -148,5 +140,23 @@ public class GameManager : MonoBehaviour
         }
 
         if (!IsGameOver) CurrentTurn = TurnPhase.Player;
+    }
+
+    public void GrantExtraTurns(int turns)
+    {
+        if (turns <= 0) return;
+        _extraTurnsQueued += turns;
+    }
+
+    public int TryConsumeBuff(Vector2Int playerCell, bool triggeredDuringMovement)
+    {
+        int turnsGranted = 0;
+        for (int i = 0; i < buffs.Count; i++)
+        {
+            var buff = buffs[i];
+            if (buff == null) continue;
+            turnsGranted += buff.Consume(playerCell, triggeredDuringMovement);
+        }
+        return turnsGranted;
     }
 }

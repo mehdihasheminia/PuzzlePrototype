@@ -14,12 +14,10 @@ public class PlayerAgent : MonoBehaviour
     [Min(0.1f)] public float moveSpeed = 4f;
     public AnimationCurve stepCurve = AnimationCurve.Linear(0, 0, 1, 1);
 
-    [Header("Health")]
-    [Min(1)] public int maxHealth = 10;
-    public int currentHealth;
-
     [Header("Turn Rules")]
-    [Min(1)] public int maxStepsPerTurn = 5; // moving no longer costs energy; this is just a per-turn cap
+    [Min(1)] public int cellsPerTurn = 5; // energy: how many cells we can traverse per turn
+
+    public int CellsPerTurn => Mathf.Max(1, cellsPerTurn);
 
     public Vector2Int CurrentCell { get; private set; }
 
@@ -53,8 +51,6 @@ public class PlayerAgent : MonoBehaviour
         CurrentCell = cell;
         transform.position = grid.CellToWorldCenter(CurrentCell);
 
-        currentHealth = Mathf.Clamp(currentHealth <= 0 ? maxHealth : currentHealth, 1, maxHealth);
-        gameManager?.OnHealthChanged(currentHealth, maxHealth);
     }
 
     public void TryMoveToCell(Vector2Int targetCell)
@@ -68,9 +64,9 @@ public class PlayerAgent : MonoBehaviour
         int steps = Mathf.Max(0, path.Count - 1);
         if (steps == 0) return;
 
-        if (steps > maxStepsPerTurn)
+        if (steps > CellsPerTurn)
         {
-            Debug.Log($"Move rejected: requires {steps} steps, allowed per turn: {maxStepsPerTurn}.");
+            Debug.Log($"Move rejected: requires {steps} steps, allowed per turn: {CellsPerTurn}.");
             return;
         }
 
@@ -80,6 +76,8 @@ public class PlayerAgent : MonoBehaviour
     IEnumerator MoveAlong(List<Vector2Int> path)
     {
         _moving = true;
+
+        int extraTurnsGranted = 0;
 
         for (int i = 1; i < path.Count; i++)
         {
@@ -96,28 +94,25 @@ public class PlayerAgent : MonoBehaviour
             }
 
             CurrentCell = path[i];
+
+            if (gameManager != null)
+            {
+                extraTurnsGranted += gameManager.TryConsumeBuff(CurrentCell, triggeredDuringMovement: i < path.Count - 1);
+            }
         }
 
         _moving = false;
 
-        // Player turn ends after movement completes.
-        gameManager?.NotifyPlayerTurnEnded(this);
-    }
+        if (gameManager != null)
+        {
+            if (extraTurnsGranted > 0)
+            {
+                gameManager.GrantExtraTurns(extraTurnsGranted);
+            }
 
-    // --- Health interface ---
-    public void ApplyDamage(int amount)
-    {
-        if (amount <= 0 || gameManager?.IsGameOver == true) return;
-        currentHealth = Mathf.Max(0, currentHealth - amount);
-        gameManager?.OnHealthChanged(currentHealth, maxHealth);
-    }
-
-    public void ApplyHeal(int amount, bool capToMax = true)
-    {
-        if (amount <= 0 || gameManager?.IsGameOver == true) return;
-        if (capToMax) currentHealth = Mathf.Min(maxHealth, currentHealth + amount);
-        else          currentHealth += amount;
-        gameManager?.OnHealthChanged(currentHealth, maxHealth);
+            // Player turn ends after movement completes (unless extra turns were granted).
+            gameManager.NotifyPlayerTurnEnded(this);
+        }
     }
 
     // --- Skip Turn ---
@@ -137,6 +132,6 @@ public class PlayerAgent : MonoBehaviour
         if (!grid.InBounds(targetCell) || !grid.IsWalkable(targetCell)) return false;
         if (!pathfinder.TryFindPath(CurrentCell, targetCell, out var path)) return false;
         steps = Mathf.Max(0, path.Count - 1);
-        return steps > 0 && steps <= maxStepsPerTurn;
+        return steps > 0 && steps <= CellsPerTurn;
     }
 }
