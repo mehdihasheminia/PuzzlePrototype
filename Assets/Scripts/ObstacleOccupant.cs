@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 [ExecuteAlways]
 [DisallowMultipleComponent]
@@ -10,9 +11,15 @@ public class ObstacleOccupant : MonoBehaviour, IBoardAffectsWalkability
     public Vector2Int Cell { get; private set; }
 
     [Header("Footprint (Relative Offsets in cells, defined at 0° yaw)")]
-    [Tooltip("Offsets relative to this object's Cell that are blocked. (0,0) blocks only the current cell.\n" +
-             "Defined for Y-rotation = 0°, where +X = right and +Y = forward (+Z in world).")]
-    public List<Vector2Int> relativeFootprint = new() { Vector2Int.zero };
+    [Tooltip("Walkability grid describing which cells become blocked relative to this object.\n" +
+             "Cells marked Blocked in the asset will be blocked. Unspecified/Walkable cells are ignored.")]
+    public CellStatusGridAsset footprintAsset;
+
+    [Tooltip("Footprint grid cell treated as this object's cell (local origin).")]
+    public Vector2Int footprintAnchor = Vector2Int.zero;
+
+    [SerializeField, HideInInspector, FormerlySerializedAs("relativeFootprint")]
+    List<Vector2Int> legacyRelativeFootprint = new() { Vector2Int.zero };
 
     [Header("Rotation Handling")]
     [Tooltip("If true, uses the object's Y euler rotation, snapped to 0/90/180/270, to rotate the footprint on the grid.")]
@@ -108,6 +115,22 @@ public class ObstacleOccupant : MonoBehaviour, IBoardAffectsWalkability
             var p = grid.CellToWorldCenter(c) + Vector3.up * 0.012f;
             Gizmos.DrawCube(p, new Vector3(grid.cellSize * 0.9f, 0.01f, grid.cellSize * 0.9f));
         }
+
+        if (footprintAsset != null)
+        {
+            footprintAsset.EnsureSize();
+            Gizmos.color = new Color(1f, 0.6f, 0.1f, 0.18f);
+            int steps = QuantizedRotSteps();
+            foreach (var (cell, status) in footprintAsset.EnumerateCells())
+            {
+                if (status == CellStatusGridAsset.CellStatus.Blocked)
+                    continue; // already drawn above
+
+                var rotated = RotateRightAngles(cell - footprintAnchor, steps);
+                var world = grid.CellToWorldCenter(Cell + rotated) + Vector3.up * 0.006f;
+                Gizmos.DrawWireCube(world, new Vector3(grid.cellSize * 0.88f, 0.01f, grid.cellSize * 0.88f));
+            }
+        }
     }
 #endif
 
@@ -125,12 +148,6 @@ public class ObstacleOccupant : MonoBehaviour, IBoardAffectsWalkability
     public IEnumerable<Vector2Int> GetBlockedCells()
     {
         // Rotate/mirror footprint on demand from current transform
-        if (relativeFootprint == null || relativeFootprint.Count == 0)
-        {
-            yield return Cell; // at least block our own cell
-            yield break;
-        }
-
         int steps = QuantizedRotSteps();
 
         bool mirrorX = respectNegativeScaleAsMirroring && transform.localScale.x < 0f;
@@ -138,9 +155,11 @@ public class ObstacleOccupant : MonoBehaviour, IBoardAffectsWalkability
 
         var seen = new HashSet<Vector2Int>();
 
-        for (int i = 0; i < relativeFootprint.Count; i++)
+        bool yieldedAny = false;
+
+        foreach (var offset in EnumerateLocalBlockedOffsets())
         {
-            var o = relativeFootprint[i];
+            var o = offset;
 
             // Optional mirror first (local)
             if (mirrorX) o.x = -o.x;
@@ -151,11 +170,42 @@ public class ObstacleOccupant : MonoBehaviour, IBoardAffectsWalkability
 
             var cell = Cell + r;
             if (seen.Add(cell))
+            {
+                yieldedAny = true;
                 yield return cell;
+            }
         }
+
+        if (!yieldedAny)
+            yield return Cell;
     }
 
     // === Helpers ===
+    IEnumerable<Vector2Int> EnumerateLocalBlockedOffsets()
+    {
+        if (footprintAsset != null)
+        {
+            footprintAsset.EnsureSize();
+            foreach (var (cell, status) in footprintAsset.EnumerateCells())
+            {
+                if (status != CellStatusGridAsset.CellStatus.Blocked)
+                    continue;
+                yield return cell - footprintAnchor;
+            }
+
+            yield break;
+        }
+
+        if (legacyRelativeFootprint == null || legacyRelativeFootprint.Count == 0)
+        {
+            yield return Vector2Int.zero;
+            yield break;
+        }
+
+        foreach (var c in legacyRelativeFootprint)
+            yield return c;
+    }
+
     void NotifyIfChanged(bool force = false)
     {
         if (grid == null) return;
