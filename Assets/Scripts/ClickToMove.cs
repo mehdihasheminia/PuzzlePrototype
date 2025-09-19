@@ -192,7 +192,8 @@ public class ClickToMove : MonoBehaviour
 
         if (moved && _agent.gameManager != null)
         {
-            _agent.gameManager.NotifyPlayerTurnEnded(_agent);
+            // Dragging consumes the turn but skips hazard/buff resolution because the player stayed in place.
+            _agent.gameManager.NotifyPlayerTurnEnded(_agent, resolveTurnEndEffects: false);
         }
 
         _activeDrag = null;

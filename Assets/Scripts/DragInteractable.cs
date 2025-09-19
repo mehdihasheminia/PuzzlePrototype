@@ -55,12 +55,23 @@ public class DragInteractable : MonoBehaviour
     Vector3 _rotationReferenceDir;
     float _rotationPointerOffset;
 
+    bool _originCaptured;
+    int _appliedTranslationSteps; // total steps applied relative to the original spawn position
+    int _appliedRotationSteps;    // total snap steps applied relative to the original spawn rotation
+
     void Awake()
     {
         _occupant = GetComponent<IBoardCellOccupant>();
         _blocker = GetComponent<IBoardAffectsWalkability>();
         if (grid == null && _occupant != null)
             grid = _occupant.GetGrid();
+
+        CaptureInitialStateIfNeeded();
+    }
+
+    void Start()
+    {
+        CaptureInitialStateIfNeeded();
     }
 
     /// <summary>Returns false when the drag should be rejected (invalid setup or currently dragging).</summary>
@@ -90,6 +101,8 @@ public class DragInteractable : MonoBehaviour
     public bool BeginDrag(Vector3 pointerWorldPosition)
     {
         if (!CanBeginDrag()) return false;
+
+        CaptureInitialStateIfNeeded();
 
         _dragging = true;
         _startWorld = transform.position;
@@ -147,8 +160,8 @@ public class DragInteractable : MonoBehaviour
             Vector3 delta = planePos - _startWorld;
             float axisDistance = Vector3.Dot(delta, _translationAxisWorld) - _pointerStartAxisDistance;
             float cellSize = Mathf.Max(0.0001f, g.cellSize);
-            float maxDistance = cellSize * Mathf.Max(0, maxTranslationSteps);
-            float minDistance = cellSize * Mathf.Min(0, minTranslationSteps);
+            float maxDistance = cellSize * (maxTranslationSteps - _appliedTranslationSteps);
+            float minDistance = cellSize * (minTranslationSteps - _appliedTranslationSteps);
             axisDistance = Mathf.Clamp(axisDistance, minDistance, maxDistance);
 
             _currentTranslationOffset = axisDistance;
@@ -170,8 +183,8 @@ public class DragInteractable : MonoBehaviour
 
             float signedAngle = Vector3.SignedAngle(_rotationReferenceDir, currentDir, _rotationAxisWorld) - _rotationPointerOffset;
             float snapAngle = Mathf.Max(0.0001f, rotationSnapAngle);
-            float maxAngle = snapAngle * Mathf.Max(0, maxRotationSteps);
-            float minAngle = snapAngle * Mathf.Min(0, minRotationSteps);
+            float maxAngle = snapAngle * (maxRotationSteps - _appliedRotationSteps);
+            float minAngle = snapAngle * (minRotationSteps - _appliedRotationSteps);
             signedAngle = Mathf.Clamp(signedAngle, minAngle, maxAngle);
 
             _currentRotationAngle = signedAngle;
@@ -201,12 +214,14 @@ public class DragInteractable : MonoBehaviour
 
             float cellSize = Mathf.Max(0.0001f, g.cellSize);
             int desiredStep = Mathf.RoundToInt(_currentTranslationOffset / cellSize);
-            desiredStep = Mathf.Clamp(desiredStep, minTranslationSteps, maxTranslationSteps);
+            int targetStep = Mathf.Clamp(_appliedTranslationSteps + desiredStep, minTranslationSteps, maxTranslationSteps);
+            int actualStepDelta = targetStep - _appliedTranslationSteps;
 
-            moved = desiredStep != 0;
+            moved = actualStepDelta != 0;
             if (moved)
             {
-                _currentStep = desiredStep;
+                _currentStep = actualStepDelta;
+                _appliedTranslationSteps = targetStep;
                 Vector3 snapped = _startWorld + _translationAxisWorld * (cellSize * _currentStep);
                 snapped.y = _startWorld.y;
                 transform.position = snapped;
@@ -221,12 +236,14 @@ public class DragInteractable : MonoBehaviour
         {
             float snapAngle = Mathf.Max(0.0001f, rotationSnapAngle);
             int desiredStep = Mathf.RoundToInt(_currentRotationAngle / snapAngle);
-            desiredStep = Mathf.Clamp(desiredStep, minRotationSteps, maxRotationSteps);
+            int targetStep = Mathf.Clamp(_appliedRotationSteps + desiredStep, minRotationSteps, maxRotationSteps);
+            int actualStepDelta = targetStep - _appliedRotationSteps;
 
-            moved = desiredStep != 0;
+            moved = actualStepDelta != 0;
             if (moved)
             {
-                _currentStep = desiredStep;
+                _currentStep = actualStepDelta;
+                _appliedRotationSteps = targetStep;
                 float snappedAngle = rotationSnapAngle * _currentStep;
                 transform.rotation = _startRotation * Quaternion.AngleAxis(snappedAngle, _rotationAxisWorld);
                 _currentRotationAngle = snappedAngle;
@@ -289,6 +306,14 @@ public class DragInteractable : MonoBehaviour
         if (grid != null) return grid;
         if (_occupant != null) grid = _occupant.GetGrid();
         return grid;
+    }
+
+    void CaptureInitialStateIfNeeded()
+    {
+        if (_originCaptured) return;
+        _appliedTranslationSteps = 0;
+        _appliedRotationSteps = 0;
+        _originCaptured = true;
     }
 
     static Vector3 ProjectPointToPlane(Vector3 point, float planeY)
