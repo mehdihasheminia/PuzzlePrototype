@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 65e7c3335b3da1441891d40e2fa696ad, type: 3}
-  m_Name: Obstacle_CellStatusGrid
+  m_Name: Obstacle_1x3
   m_EditorClassIdentifier: 
   width: 3
   height: 3
